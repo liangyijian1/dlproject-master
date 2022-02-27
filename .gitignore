@@ -1,3 +1,16 @@
 /src/model/
 /sources/
 /src/res/
+/.idea/.gitignore
+/.idea/deployment.xml
+/.idea/dlproject-master.iml
+/src/history/label.txt
+/src/label.txt
+/src/res/log.txt
+/.idea/misc.xml
+/.idea/modules.xml
+/src/history/model/net_107.pth
+/.idea/inspectionProfiles/profiles_settings.xml
+/src/res/test.txt
+/src/res/val.txt
+/.idea/vcs.xml

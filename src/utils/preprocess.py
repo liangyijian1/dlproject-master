@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import cv2
 import torch
 from torch.utils.data import DataLoader
@@ -34,6 +33,12 @@ def surfaceFitting(img, k, deg=3, plot=False):
 
         ret:数据类型为numpy.narray
             拟合点的图片
+
+    Examples
+    -------
+        y, _ = surfaceFitting(img, k, deg)
+        surfacePosition = np.array([512 - i for i in y])
+        flattenImg = flatten(img, surfacePosition)
 
     """
     ret = np.copy(img)
@@ -148,7 +153,7 @@ def denoise(img, n, kernel_size=3):
 
 
 def cropImg(img, top=0, button=0, left=0, right=0):
-    '''
+    """
     裁剪图片
     Parameters
     ----------
@@ -180,32 +185,23 @@ def cropImg(img, top=0, button=0, left=0, right=0):
     --------
         img = cv2.imread('7-462.jpg', flags=0)
         ret = cropImg(img, 60)
-    '''
+    """
     ret = img[top:img.shape[0] - button, left:img.shape[1] - right]
     return ret
 
 
-def preprocess(img, k, deg):
-    y, _ = surfaceFitting(img, k, deg)
-    surfacePosition = np.array([512 - i for i in y])
-    flattenImg = flatten(img, surfacePosition)
-    flattenImg = denoise(flattenImg, 3)
-    flattenImg = cropImg(flattenImg, 60)
-    return flattenImg
+def copyD2D(srcDir: str, dstDir: str):
+    """
+    將一個文件夾中的所有圖片copy到制定目錄
+    Parameters
+    ----------
+        srcDir: String
+            源目錄
 
+        dstDir: String
+            目標目錄
 
-def appendFileName(src, dst):
-    with open(src, 'r') as f:
-        content = f.readlines()
-        with open(dst, 'a+') as c:
-            c.write('\n')
-            for item in content:
-                c.write(item)
-            c.close()
-        f.close()
-
-
-def copyD2D(srcDir, dstDir):
+    """
     from shutil import copy
     srcNames = os.listdir(srcDir)
     for item in srcNames:
@@ -214,20 +210,25 @@ def copyD2D(srcDir, dstDir):
 
 
 class TestModel:
-
+    """
+    模型測試的類
+    """
     def __init__(self, model, modelLocation, strict=True):
         model.load_state_dict(torch.load(modelLocation), strict=strict)
         self.model = model
 
     def testSingleImg(self, img):
         """
-
+        以單張圖片的格式來測試網絡
         Parameters
         ----------
-        img
+        img:數據類型爲numpy.narray
+            圖片數據
 
         Returns
         -------
+            預測類別
+
         Examples
         -------
             img = cv2.imread('../sources/dataset/apis-mellifera/apis-mellifera_2_a0020469.jpg')
@@ -239,19 +240,18 @@ class TestModel:
         return prediction.numpy()[0]
 
     def testDataLoader(self, dataLoader: DataLoader):
-        '''
-
+        """
+        以DataLoader的形式來測試網絡預測的準確度，命令行會打印出準確率
         Parameters
         ----------
-        dataLoader
+        dataLoader: DataLoader
+            DataLoader類型的數據集
 
-        Returns
-        -------
         Examples
         -------
         TestModel(ResNet50(ResidualBlock, 3, 151), 'model/net_107.pth').testDataLoader(valloader)
 
-        '''
+        """
         correct = 0
         total = 0
         print('正在计算准确率...')
@@ -265,15 +265,71 @@ class TestModel:
 
     def getFeatureVector(self, img):
         """
-
+        将单张图片转换成特征向量
         Parameters
         ----------
-            img:
-                (1, channel_num, H, W)
+            img: 数据类型为numpy.narray
+                圖片數據，數組格式爲(1, channel_num, H, W)
 
         Returns
         -------
-
+            返回圖片的特徵向量
         """
-        return self.model(img)
+        return self.model(img).detach().numpy().flatten()
 
+
+def getAllFeatureVector(rootPath: str,
+                        model,
+                        modelLocation: str,
+                        transform,
+                        txtRootPath: str = ''):
+    """
+    將制定目錄下的各類圖片轉換成向量的形式，以便操作。
+    特徵提取是由CNN完成
+    Parameters
+    ----------
+        rootPath: Sting
+            图片根目录。
+            如果你的其中一张图片路径是../sources/dataset/apple/apple1.jpg，那么rootPath = '../sources/dataset/'
+            
+        model:
+            网络模型。
+            需要继承nn.Moudel
+
+        modelLocation: String
+            预训练后的模型参数文件地址。
+
+        transform:
+            需要对输入的图片做的预处理
+            比如torchvision.transforms.ToTensor()是将图片转换成tensor格式
+
+        txtRootPath:String
+            图片向量保存的根目录。
+
+    Examples
+    -------
+        model = ResNet50Regression(1)
+        modelLocation = 'model/net_22.pth'
+        rootPath = '../sources/dataset/'
+        transform = torchvision.transforms.ToTensor()
+        getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
+
+    """
+    import numpy as np
+    temp = []
+    names = os.listdir(rootPath)
+    print('wait a minute...')
+    try:
+        for name in names:
+            imgNames = os.listdir(rootPath + name + '/')
+            for imgName in imgNames:
+                img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
+                k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
+                    .getFeatureVector(transform(img).view(1, 1, 224, 224))
+                temp.append(k)
+            temp = np.array(temp)
+            np.savetxt(txtRootPath + name + '.txt', temp, '%f', delimiter=',')
+            print(name + '.txt ' + 'saved successfully! The number of records is {}'.format(temp.shape[0]))
+            temp = []
+    except:
+        print('Save failed')

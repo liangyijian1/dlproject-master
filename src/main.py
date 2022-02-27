@@ -87,10 +87,10 @@ if __name__ == "__main__":
     modelPath = '../../autodl-nas/model/'
     if not os.path.exists(modelPath):
         os.makedirs(modelPath)
-    if not os.path.exists('history/res'):
-        os.makedirs('history/res')
-    with open("history/res/test.txt", "w") as f:
-        with open("history/res/log.txt", "w") as f2:
-            with open("history/res/val.txt", 'w') as f3:
+    if not os.path.exists('res'):
+        os.makedirs('res')
+    with open("res/test.txt", "w") as f:
+        with open("res/log.txt", "w") as f2:
+            with open("res/val.txt", 'w') as f3:
                 startTrain(net, trainloader, testloader, valloader,
                            EPOCH, loss, optimizer, f2, f, f3, savePath=modelPath)
