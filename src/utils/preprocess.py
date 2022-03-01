@@ -41,6 +41,7 @@ def surfaceFitting(img, k, deg=3, plot=False):
         flattenImg = flatten(img, surfacePosition)
 
     """
+    import numpy as np
     ret = np.copy(img)
     for i in range(ret.shape[0]):
         for j in range(ret.shape[1]):
@@ -89,6 +90,7 @@ def flatten(img, surfacePosition):
         ret：数据类型为numpy.narray
             展平后的图片
     """
+    import numpy as np
     ret = np.zeros(shape=img.shape, dtype=np.uint8)
     imax = np.max(surfacePosition)
     imin = np.min(surfacePosition)
@@ -129,6 +131,7 @@ def denoise(img, n, kernel_size=3):
             返回图片
 
     """
+    import numpy as np
     ret = cv2.medianBlur(img, kernel_size)
     k = []
     num = 0
@@ -213,6 +216,7 @@ class TestModel:
     """
     模型測試的類
     """
+
     def __init__(self, model, modelLocation, strict=True):
         model.load_state_dict(torch.load(modelLocation), strict=strict)
         self.model = model
@@ -333,3 +337,146 @@ def getAllFeatureVector(rootPath: str,
             temp = []
     except:
         print('Save failed')
+
+
+def getFeatureVectorPlus(img,
+                         img_save_path: str,
+                         res_save_path: str,
+                         k: int,
+                         deg: int,
+                         transform,
+                         model,
+                         model_dict_path: str,
+                         crop: list = [0, 0, 0, 0],
+                         strict: bool = False,
+                         n: int = 5,
+                         kernel_size: int = 3,
+                         progress: bool = False):
+    """
+    提取一张不经过任何处理图片的特征向量
+    Parameters
+    ----------
+    img
+    img_save_path
+    res_save_path
+    k
+    deg
+    transform
+    model
+    model_dict_path
+    crop
+    strict
+    n
+    kernel_size
+    progress
+
+    Returns
+    -------
+    Examples
+    --------
+       getFeatureVectorPlus(img=img,
+                            img_save_path='test/img/te-12-262.jpg',
+                            res_save_path='test/res/te-12-262.txt',
+                            k=190,
+                            deg=3,
+                            transform=torchvision.transforms.ToTensor(),
+                            model=ResNet50Regression(1),
+                            model_dict_path='model/net_22.pth',
+                            crop=[60, 0, 30, 30]
+                            )
+    """
+    import cv2
+    import numpy as np
+    surface, _ = surfaceFitting(img, k=k, deg=deg, plot=progress)
+    if progress:
+        cv2.imshow('PRESS TO CONTINUE', _)
+        cv2.waitKey(0)
+    surfacePosition = np.array([img.shape[1] - i for i in surface])
+    ret = flatten(img, surfacePosition)
+    ret = denoise(ret, n=n, kernel_size=kernel_size)
+    ret = cropImg(ret, crop[0], crop[1], crop[2], crop[3])
+    cv2.imwrite(img_save_path, ret)
+    feature = TestModel(model, model_dict_path, strict=strict) \
+        .getFeatureVector(transform(np.resize(ret, (224, 224))).view(1, 1, 224, 224))
+    np.savetxt(res_save_path, feature.reshape(1, -1), fmt='%f', delimiter=',')
+
+
+def make_labels(root_path: str, save_path: str, label_location: str):
+    """
+    为图片特征向量最后一列中加上对应标签
+    Parameters
+    ----------
+    root_path: String
+        图片向量文件存放的根路径
+        root_path/feature.txt
+
+    save_path: String
+        加上标签后文件存放的位置
+
+    label_location: String
+        label文件的路径
+
+    Notes
+    -----
+    label是以json格式保存在可读文件中, 键名是图片向量的文件名， 值为标签
+    比如apple这个类的图片向量被保存到apple.txt中，并且它对应的标签为1，
+    label中就是 {"apple": 1}
+
+    """
+    import os
+    import json
+    import numpy as np
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    with open(label_location, 'r') as f:
+        s1 = json.load(f)
+        for key, label in s1.items():
+            path_key = root_path + key + '.txt'
+            if os.path.exists(path_key):
+                with open(path_key, 'r') as f1:
+                    content = f1.readlines()
+                    for i in range(len(content)):
+                        content[i] = content[i].strip().split(',')
+                    content = np.array(content).astype(np.float64)
+                    content = np.insert(content, content.shape[1], s1[key], axis=1)
+                    np.savetxt(save_path + key + '-done.txt', content, '%f', delimiter=',')
+
+
+class MarkLabel:
+    """
+    OCT图像分层标记
+    """
+
+    def __init__(self, win_name: str):
+        cv2.namedWindow(win_name, 0)
+        self.win_name = win_name
+        print('标记完后按下Enter保存，退出按ESC键\n')
+
+    def on_mouse_pick_points(self, event, x, y, flags, param):
+        """
+        鼠标事件回调函数
+        """
+        if flags == cv2.EVENT_FLAG_LBUTTON:
+            cv2.drawMarker(param, (x, y), 255, markerSize=1)
+
+    def markLabel(self, img, save_path: str = None):
+        """
+        分层标记点
+        Parameters
+        Examples
+        --------
+        MarkLabel('show').markLabel(image, 'test/img/262label.jpg')
+        """
+        cv2.setMouseCallback(self.win_name, self.on_mouse_pick_points, img)
+        while True:
+            cv2.imshow(self.win_name, img)
+            key = cv2.waitKey(30)
+            if key == 27:  # ESC
+                break
+            elif key == 13:  # enter
+                if save_path is None:
+                    print('没有给定文件路径!\n')
+                    continue
+                cv2.imwrite(save_path, img)
+                print('保存成功\n')
+        cv2.destroyAllWindows()

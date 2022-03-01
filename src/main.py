@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.optim as optim
 
-from MyDataset import *
+from net.MyDataset import *
 from net.resnet18 import init_weight
 from net.resnet50 import ResNet50, ResidualBlock
 

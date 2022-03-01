@@ -1,9 +1,8 @@
-import cv2
 import torch.utils.data
-import torchvision.datasets
-from torch.utils.data.dataset import T_co
 from PIL import Image
-from utils.preprocess import *
+from torch.utils.data.dataset import T_co
+
+from src.utils.preprocess import *
 
 
 def get_txt(imgPath, label, txtPath):

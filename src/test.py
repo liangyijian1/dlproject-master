@@ -1,23 +1,38 @@
-import torchvision
+import cv2
+import numpy as np
+import torchvision.transforms
 
+import utils.preprocess as pr
+import utils.utils as ut
 from net.CnnRegression import ResNet50Regression
-from utils.preprocess import getAllFeatureVector
+from utils.regression import Regression
 
 if __name__ == '__main__':
-    model = ResNet50Regression(1)
-    modelLocation = 'model/net_22.pth'
-    rootPath = '../sources/dataset/'
-    transform = torchvision.transforms.ToTensor()
-    getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
-    # temp = []
-    # names = os.listdir(rootPath)
-    # for name in names:
-    #     imgNames = os.listdir(rootPath + name + '/')
-    #     for imgName in imgNames:
-    #         img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
-    #         transform = torchvision.transforms.ToTensor()
-    #         k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
-    #             .getFeatureVector(transform(img).view(1, 1, 224, 224))
-    #         temp.append(k)
-    # print('time:{}\n'.format(time_beg - time_end))
-    # print(np.array(temp))
+    reg = Regression()
+    X, y = ut.get_data('res/features/done/img.txt')
+    # dt, dt_parm, dt_score = reg.dtRegression(X, y, 1, 50, cv_num=5, n_iter=50)
+    # print(dt_score)
+    a, b, model = reg.mlRegression(X, y)
+    # y_pre = a.predict(content.reshape(1, -1))
+    # print(y_pre)
+
+    # ut.saveModel('dt_model.pkl', dt)
+    # y_pre = dt.predict(content.reshape(1, -1))
+    # print(y_pre)
+    img = cv2.imread('test/img/16-225.jpg', flags=0)
+
+    pr.getFeatureVectorPlus(img=img,
+                         img_save_path='test/img/te-16-225.jpg',
+                         res_save_path='test/res/te-16-225.txt',
+                         k=190,
+                         deg=3,
+                         transform=torchvision.transforms.ToTensor(),
+                         model=ResNet50Regression(1),
+                         model_dict_path='model/net_22.pth',
+                         crop=[60, 0, 30, 30]
+                         )
+    with open('test/res/te-16-225.txt', 'r') as f:
+        feature = f.readline().strip().split(',')
+        feature = np.array(feature).astype(np.float64)
+    y_pre = a.predict(feature.reshape(1, -1))
+    print(y_pre)

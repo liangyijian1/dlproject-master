@@ -1,23 +1,12 @@
 import cv2
-# import pandas as pd
-# import joblib
-# import sklearn.linear_model
-from numpy import *
-# from sklearn import ensemble
-# from sklearn.cluster import KMeans
-# from sklearn.metrics import plot_roc_curve
-# from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
-# from sklearn.neighbors import KNeighborsRegressor
-# from sklearn.linear_model import Lasso
-# from sklearn.svm import SVR, SVC
+
+
 from scipy.stats import pearsonr
-# from pandas.core.frame import DataFrame
-# import matplotlib.pyplot as plt
-# from sklearn.tree import DecisionTreeRegressor
+
 
 
 def saveModel(pkl_filename, obj):
-    '''
+    """
     持久化对象
 
     Parameters
@@ -29,17 +18,18 @@ def saveModel(pkl_filename, obj):
         obj : object
             需要保存的对象
 
-    '''
+    """
+    import joblib
     joblib.dump(filename=pkl_filename, value=obj)
 
 
 def loadModel(pkl_filename):
-    '''
+    """
     读取对象
 
     Parameters
     ----------
-        pkl_filename : 
+        pkl_filename :
             需要读取的对象的路径。默认读取位置在当前文件夹下，要读取其他地方的对象，需要把路径写完整。
             文件类型为.pkl
 
@@ -48,7 +38,8 @@ def loadModel(pkl_filename):
         obj : object
             需要读取的对象
 
-    '''
+    """
+    import joblib
     obj = joblib.load(pkl_filename)
     return obj
 
@@ -114,9 +105,9 @@ def findBestParmByGridSearchCv(X, y, estimator, parm_grid, cv_num=5, n_jobs=-1):
 
 
 def findBestParmByRandomizedSearchCV(X, y, estimator, parm_list, cv_num, n_iter=20, n_jobs=-1):
-    '''
+    """
     随机搜索寻找较优参数
-    
+
     Parameters
     ----------
         X_train : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
@@ -128,25 +119,25 @@ def findBestParmByRandomizedSearchCV(X, y, estimator, parm_list, cv_num, n_iter=
             目标值(真实值)。
             每一个参数是对应样本数据的目标值
             例如y_train = [16.50000,31.10000,10.50000]
-        
+
         estimator :数据类型为'object'
             基学习器对象。
             该对象被认为是实现了sklearn estimator接口的对象。按需求直接使用sklearn中的类对象。
             例如需要使用knn回归来作为基学习器，就必须要导入KNeighborsRegressor这个类，并且将该类的对象赋值给estimator参数,base_estimator=KNeighborsRegressor()。
             具体学习器对象请看下面Notes
-    
+
         parm_list : 数据类型为'字典'
             待优化参数
             key为需要优化的参数名。value为列表。
             例如parm_grid = {"C": [0.1, 1.0], "gamma": [0.1], "epsilon": [0.1, 1.0]}
-    
+
         n_iter : 数据类型为'int'
             训练次数，次数越大精度越高。默认n_iter=20
 
         cv_num : 数据类型为'int'
             S折交叉验证的折数。默认cv_num = 5
             即将训练集分成多少份来进行交叉验证。如果样本较多的话，可以适度增大cv的值
-        
+
         n_jobs : 数据类型为'int'
             用来设定cpu的运行情况。默认n_jobs = -1为使用全部cpu
 
@@ -162,16 +153,17 @@ def findBestParmByRandomizedSearchCV(X, y, estimator, parm_list, cv_num, n_iter=
     Examples
     --------
         parm_grid = {'n_neighbors': np.arange(n_neighbors_start, n_neighbors_end,n_neighbors_step)}
-        best_parm, best_score = findBestParmByRandomizedSearchCV(X, y, estimator=KNeighborsRegressor(), parm_grid=parm_grid, cv_num=10, n_iter=20)  
+        best_parm, best_score = findBestParmByRandomizedSearchCV(X, y, estimator=KNeighborsRegressor(), parm_grid=parm_grid, cv_num=10, n_iter=20)
 
     Notes
     --------
         knn作为基学习器，base_estimator = KNeighborsRegressor()
         决策树作为基学习器，base_estimator = DecisionTreeRegressor()
         随机森林作为基学习器，base_estimator = RandomForestRegressor()
-        svm作为基学习器，base_estimator = SVR()  
+        svm作为基学习器，base_estimator = SVR()
 
-    '''
+    """
+    from sklearn.model_selection import RandomizedSearchCV
     rd = RandomizedSearchCV(estimator=estimator, param_distributions=parm_list, n_iter=n_iter, n_jobs=n_jobs,
                             cv=cv_num).fit(X, y)
     return rd.best_params_, rd.best_score_
@@ -399,7 +391,7 @@ def rfRegressionParm(X, y,
 
 
 def dtRegressionParm(X, y, max_depth_start, max_depth_end, max_depth_step, cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     优化CART回归中树的最大深度
 
     Parameters
@@ -447,7 +439,9 @@ def dtRegressionParm(X, y, max_depth_start, max_depth_end, max_depth_step, cv_nu
         best_score : float
             模型交叉验证得分
 
-    '''
+    """
+    import numpy as np
+    from sklearn.tree import DecisionTreeRegressor
     parm_list = {'max_depth': np.arange(max_depth_start, max_depth_end, max_depth_step)}
     best_parm, best_score = findBestParmByRandomizedSearchCV(X, y, estimator=DecisionTreeRegressor(),
                                                              parm_list=parm_list, cv_num=cv_num, n_iter=n_iter,
@@ -832,7 +826,7 @@ def lassoParm(X, y, alpha, max_iter, cv_num=3, n_iter=20, n_jobs=-1):
 
 
 def pearsonrValidation(X, y, X_name=None):
-    '''
+    """
     皮尔逊相关系数
 
     Parameters
@@ -845,7 +839,7 @@ def pearsonrValidation(X, y, X_name=None):
         y : 数据类型为'类数组'(list or numpy.narray)
             因变量
             例如y_train = [16.50000,31.10000,10.50000]
-        
+
         X_name : 形状为(特征数量, )的'类数组'。可选
             特征名。默认X_name = None
 
@@ -855,7 +849,9 @@ def pearsonrValidation(X, y, X_name=None):
             若给没有给定参数X_name时候，返回一个(特征数量, 2)的DataFrame，第一列为皮尔逊系数，第二列为p值。
             若给定参数X_name时候，返回一个(特征数量, 3)的DataFrame，首列为特征名，第二列为皮尔逊系数，第三列为p值。
 
-    '''
+    """
+    from pandas import DataFrame
+    import numpy as np
     res = []
     for i in range(X.shape[1]):
         res.insert(i, pearsonr(X[:, i], y))
@@ -896,7 +892,7 @@ def modelsRoc(modelDict, X_test, y_test):
 
 
 def featureCorrelation(X, y, X_name=None, img=None):
-    '''
+    """
     相关性分析
 
     Parameters
@@ -916,7 +912,7 @@ def featureCorrelation(X, y, X_name=None, img=None):
         img : boolean
             如果需要将自变量和因变量的线性关系可视化，请让img=True，否则请保持默认img=None。
 
-    '''
+    """
     ps = pearsonrValidation(X, y, X_name)
     print(ps)
     if img is not None:
@@ -1498,7 +1494,7 @@ def denoise(img, n, kernel_size=3):
 
 
 def cropImg(img, top=0, button=0, left=0, right=0):
-    '''
+    """
     裁剪图片
     Parameters
     ----------
@@ -1533,9 +1529,32 @@ def cropImg(img, top=0, button=0, left=0, right=0):
         cv2.imshow('test', ret)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-    '''
+    """
     ret = img[top:img.shape[0] - button, left:img.shape[1] - right]
     return ret
 
 
+def get_data(feature_path: str):
+    """
+    从特征向量文件（带标签）中分离出特征和标签
+    Parameters
+    ----------
+        feature_path：String
+            特征向量的路径
+    Returns
+    -------
+        X：numpy.narray
+            特征向量
+        y：float
+            真实值
 
+    """
+    import numpy as np
+    with open(feature_path, 'r') as f:
+        contents = f.readlines()
+        for i in range(len(contents)):
+            contents[i] = contents[i].strip().split(',')
+        contents = np.array(contents)
+    X = contents[:, :-1].astype(np.float64)
+    y = contents[:, -1].astype(np.float64)
+    return X, y
