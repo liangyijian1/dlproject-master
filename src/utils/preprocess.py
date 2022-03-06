@@ -116,14 +116,14 @@ def denoise(img, n, kernel_size=3):
     图片去噪
     Parameters
     ----------
-        img:数据类型为numpy.narray
-            图片数据
+    img:数据类型为numpy.narray
+        图片数据
 
-        n:数据类型为int
-            使用前n行的均值和标准差进行阈值去噪
+    n:数据类型为int
+        使用前n行的均值和标准差进行阈值去噪
 
-        kernel_size：数据类型为int
-            中值滤波核的大小
+    kernel_size：数据类型为int
+        中值滤波核的大小
 
     Returns
     -------
@@ -132,18 +132,18 @@ def denoise(img, n, kernel_size=3):
 
     """
     import numpy as np
-    ret = cv2.medianBlur(img, kernel_size)
+    ret = np.copy(img)
     k = []
     num = 0
     sum = 0
     for i in range(n):
         for j in range(ret.shape[1]):
-            if ret[i][j] <= (5):
+            if ret[i][j] <= 4:
                 continue
             sum += ret[i][j]
             k.append(ret[i][j])
             num += 1
-    ave = num / sum
+    ave = sum / num
     sum = 0
     for value in k:
         sum += np.power(value - ave, 2)
@@ -152,6 +152,11 @@ def denoise(img, n, kernel_size=3):
         for j in range(ret.shape[1]):
             if ret[i][j] <= sd + ave:
                 ret[i][j] = 0
+    for i in range(30):
+        for j in range(ret.shape[1]):
+            ret[i, j] = 0
+            ret[511 - i, j] = 0
+    ret = cv2.medianBlur(ret, ksize=kernel_size)
     return ret
 
 

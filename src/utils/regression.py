@@ -364,7 +364,8 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中knnRegressionParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         '''
-        best_parm, best_score = knnRegressionParm(X_train, y_train, n_neighbors_start, n_neighbors_end, n_neighbors_step, cv_num=cv_num, n_jobs=-1)
+        best_parm, best_score = knnRegressionParm(X_train, y_train, n_neighbors_start, n_neighbors_end,
+                                                  n_neighbors_step, cv_num=cv_num, n_jobs=-1)
         model = KNeighborsRegressor(n_neighbors=best_parm['n_neighbors']).fit(X_train, y_train)
         return model, best_parm, best_score
 
@@ -543,11 +544,12 @@ class Regression:
 
     def gradientBoostRegression(self, X_train, y_train,
                                 n_estimators_start, n_estimators_end,
-                                max_depth_start ,max_depth_end,
+                                max_depth_start, max_depth_end,
                                 min_samples_leaf_start, min_samples_leaf_end,
                                 min_samples_split_start, min_samples_split_end,
                                 learning_rate, subsample,
-                                max_depth_step=1, n_estimators_step=5, min_samples_leaf_step=1, min_samples_split_step=1,
+                                max_depth_step=1, n_estimators_step=5, min_samples_leaf_step=1,
+                                min_samples_split_step=1,
                                 cv_num=3, n_iter=20):
         '''
         GBRT回归
@@ -674,12 +676,13 @@ class Regression:
 
         '''
         best_parm, best_score = gradientBoostingParm(X_train, y_train,
-                                                     n_estimators_start ,n_estimators_end,
-                                                     max_depth_start ,max_depth_end,
+                                                     n_estimators_start, n_estimators_end,
+                                                     max_depth_start, max_depth_end,
                                                      min_samples_leaf_start, min_samples_leaf_end,
                                                      min_samples_split_start, min_samples_split_end,
                                                      learning_rate, subsample,
-                                                     max_depth_step ,n_estimators_step ,min_samples_leaf_step, min_samples_split_step,
+                                                     max_depth_step, n_estimators_step, min_samples_leaf_step,
+                                                     min_samples_split_step,
                                                      cv_num=cv_num,
                                                      n_iter=n_iter,
                                                      n_jobs=-1)
