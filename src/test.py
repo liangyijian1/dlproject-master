@@ -28,6 +28,19 @@ def standardization(img, ksize=15):
 def confirm(pre_estimate_location: numpy.typing.NDArray,
             threshold1: int,
             threshold2: int):
+    """
+
+    Parameters
+    ----------
+    pre_estimate_location: narray
+        预估计位置数组
+    threshold1
+    threshold2
+
+    Returns
+    -------
+
+    """
     import operator
     from functools import reduce
     length = len(pre_estimate_location)
