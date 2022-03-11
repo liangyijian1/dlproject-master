@@ -26,18 +26,33 @@ def standardization(img, ksize=15):
 
 # noinspection PyShadowingNames,PyShadowingBuiltins
 def confirm(pre_estimate_location: numpy.typing.NDArray,
-            threshold: int):
+            threshold1: int,
+            threshold2: int):
+    import operator
+    from functools import reduce
     length = len(pre_estimate_location)
     i, j = 0, 0
-    fragments = []
+    fragments: list = []
     while j != length:
-        while np.abs(pre_estimate_location[j + 1] - pre_estimate_location[j]) < threshold:
+        while np.abs(pre_estimate_location[j + 1] - pre_estimate_location[j]) < threshold1:
             j += 1
             if j == length - 1:
                 break
-        clips = pre_estimate_location[i:j+1]
+        clips = pre_estimate_location[i:j+1].tolist()
         fragments.append(clips)
         i = j = j + 1
+    i = 0
+    while i < len(fragments):
+        if i == len(fragments) - 1:
+            break
+        current = fragments[i]
+        next = fragments[i + 1]
+        current_len = len(current)
+        if next[0] - current[current_len - 1] > threshold2:
+            fragments[i + 1] = [int(-(j / j)) for j in fragments[i + 1]]
+            i += 1
+        i += 1
+    fragments = reduce(operator.add, fragments)
     return fragments
 
 
@@ -73,7 +88,7 @@ if __name__ == '__main__':
     # print(y_pre)
     img = cv2.imread('../sources/dataset/9/4-025.jpg', flags=0)
     ret = standardization(img)
-    de = pr.denoise(ret, 30, kernel_size=11)
+    de = pr.denoise(ret, 10, kernel_size=11)
     sobel = cv2.Sobel(de, cv2.CV_64F, 0, 1)
     row = img.shape[0]
     col = img.shape[1]
@@ -83,9 +98,15 @@ if __name__ == '__main__':
         idx = np.argmin(temp)
         k.append(idx)
     k = np.array(k)
+    filter = confirm(k, 5, 10)
     for i in range(col):
+        if k[i] == -1:
+            continue
         de[k[i], i] = 255
+    for i in range(col):
+        if filter[i] == -1:
+            continue
+        ret[filter[i], i] = 255
     merge = np.hstack((img, ret, de))
-    cv2.imwrite('merge.jpg', merge)
-    # cv2.imshow('1', merge)
-    # cv2.waitKey(0)
+    cv2.imshow('1', merge)
+    cv2.waitKey(0)
