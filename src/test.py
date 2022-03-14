@@ -1,3 +1,5 @@
+import random
+
 import cv2
 import numpy as np
 import numpy.typing
@@ -41,8 +43,6 @@ def confirm(pre_estimate_location: numpy.typing.NDArray,
     -------
 
     """
-    import operator
-    from functools import reduce
     length = len(pre_estimate_location)
     i, j = 0, 0
     fragments: list = []
@@ -51,21 +51,21 @@ def confirm(pre_estimate_location: numpy.typing.NDArray,
             j += 1
             if j == length - 1:
                 break
-        clips = pre_estimate_location[i:j+1].tolist()
+        clips = pre_estimate_location[i:j + 1].tolist()
         fragments.append(clips)
         i = j = j + 1
-    i = 0
-    while i < len(fragments):
-        if i == len(fragments) - 1:
-            break
-        current = fragments[i]
-        next = fragments[i + 1]
-        current_len = len(current)
-        if next[0] - current[current_len - 1] > threshold2:
-            fragments[i + 1] = [int(-(j / j)) for j in fragments[i + 1]]
-            i += 1
-        i += 1
-    fragments = reduce(operator.add, fragments)
+    # i = 0
+    # while i < len(fragments):
+    #     if i == len(fragments) - 1:
+    #         break
+    #     current = fragments[i]
+    #     next = fragments[i + 1]
+    #     current_len = len(current)
+    #     if next[0] - current[current_len - 1] > threshold2:
+    #         fragments[i + 1] = [int(-(j / j)) for j in fragments[i + 1]]
+    #         i += 1
+    #     i += 1
+    # fragments = reduce(operator.add, fragments)
     return fragments
 
 
@@ -112,14 +112,26 @@ if __name__ == '__main__':
         k.append(idx)
     k = np.array(k)
     filter = confirm(k, 5, 10)
-    for i in range(col):
-        if k[i] == -1:
-            continue
-        de[k[i], i] = 255
-    for i in range(col):
-        if filter[i] == -1:
-            continue
-        ret[filter[i], i] = 255
-    merge = np.hstack((img, ret, de))
-    cv2.imshow('1', merge)
+
+    temp = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    col: int = 0
+    for item in filter:
+        R = random.randrange(0, 256)
+        G = random.randrange(0, 256)
+        B = random.randrange(0, 256)
+        for j in item:
+            temp[j][col] = (R, G, B)
+            col += 1
+    cv2.imshow('1', temp)
     cv2.waitKey(0)
+    # for i in range(col):
+    #     if k[i] == -1:
+    #         continue
+    #     de[k[i], i] = 255
+    # for i in range(col):
+    #     if filter[i] == -1:
+    #         continue
+    #     ret[filter[i], i] = 255
+    # merge = np.hstack((img, ret, de))
+    # cv2.imshow('1', merge)
+    # cv2.waitKey(0)
