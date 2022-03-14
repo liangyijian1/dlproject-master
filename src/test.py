@@ -99,7 +99,7 @@ if __name__ == '__main__':
     #     feature = np.array(feature).astype(np.float64)
     # y_pre = a.predict(feature.reshape(1, -1))
     # print(y_pre)
-    img = cv2.imread('../sources/dataset/9/4-025.jpg', flags=0)
+    img = cv2.imread('../sources/2-482.jpg', flags=0)
     ret = standardization(img)
     de = pr.denoise(ret, 10, kernel_size=11)
     sobel = cv2.Sobel(de, cv2.CV_64F, 0, 1)
