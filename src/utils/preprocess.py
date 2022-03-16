@@ -5,63 +5,29 @@ import torch
 from torch.utils.data import DataLoader
 
 
-def surfaceFitting(img, k, deg=3, plot=False):
-    """
-    表面拟合
-    Parameters
-    ----------
-        img：数据类型为numpy.narray
-            图片数据
-
-        k：数据类型为int
-            提取拟合数据点用到的阈值k
-            将图片中低于k的灰度值置为0。
-
-        deg:数据类型为int
-            拟合使用的多项式的阶数
-            默认为3
-
-        plot：数据类型为boolean
-            是否展示绘制拟合的结果。
-            默认为False
-
-    Returns
-    -------
-        surfacePosition:数据类型为numpy.array
-            表面位置数组
-            其中的每一个数 value,有这样一个关系：col_index = img.shape[1] - value
-
-        ret:数据类型为numpy.narray
-            拟合点的图片
-
-    Examples
-    -------
-        y, _ = surfaceFitting(img, k, deg)
-        surfacePosition = np.array([512 - i for i in y])
-        flattenImg = flatten(img, surfacePosition)
-
-    """
+def surfaceFitting(img, deg=3, plot=False):
     import numpy as np
-    ret = np.copy(img)
-    for i in range(ret.shape[0]):
-        for j in range(ret.shape[1]):
-            if ret[i][j] <= (k):
-                ret[i][j] = 0
-    temp = []
-    for i in range(ret.shape[1]):
-        fd = np.flipud(ret[:, i])
-        j = ret.shape[1]
+    region = find_max_region(img, 13)
+    col = region.shape[1]
+    row = region.shape[0]
+    location = []
+    for i in range(col):
+        temp = region[:, i]
+        j = row - 1
         while j > 0:
-            if j != 0 and j < 500 and fd[j] != 0:
-                temp.append((512 - j, i + 1))
+            if temp[j] > 0:
+                location.append(j)
                 break
             j -= 1
+    temp = []
+    for i in range(len(location)):
+        temp.append((location[i], i + 1))
     temp = np.array(temp)
     X = temp[:, 1]
     y = temp[:, 0]
     z1 = np.polyfit(X, y, deg)
     p1 = np.poly1d(z1)
-    X_test = [i + 1 for i in range(ret.shape[1])]
+    X_test = [i + 1 for i in range(img.shape[1])]
     surfacePosition = np.array(p1(X_test), dtype=np.int32)
     if plot:
         pts1 = np.concatenate((X_test, surfacePosition)).reshape((2, 512)).T
@@ -69,7 +35,7 @@ def surfaceFitting(img, k, deg=3, plot=False):
         cv2.imshow('press to continue', test)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-    return surfacePosition, ret
+    return surfacePosition
 
 
 def flatten(img, surfacePosition):

@@ -111,6 +111,7 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中svmParm()函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         """
+        from sklearn import svm
         best_parm, best_score = svrParm(X_train, y_train, C=C, gama=gama, epsilon=epsilon, cv_num=cv_num, n_iter=n_iter)
         model = svm.SVR(C=best_parm['C'], kernel='rbf', gamma=best_parm['gamma'], epsilon=best_parm['epsilon']).fit(
             X_train, y_train)
@@ -195,10 +196,10 @@ class Regression:
                      max_depth_start, max_depth_end,
                      min_samples_leaf_start, min_samples_leaf_end,
                      max_depth_step=1, min_samples_leaf_step=2, n_tree_step=10, cv_num=3, n_iter=20):
-        '''
+        """
         随机森林回归
         本函数超参数只需要设定随机森林中树的棵树，树的最大深度和叶子节点最少的样本数。
-        
+
         Parameters
         ----------
             X_train : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
@@ -215,7 +216,7 @@ class Regression:
                 随机森林中决策树的数量。
                 给定一个可能取值的区间(左闭右开)，该参数为这个区间的左端点。程序将会在区间内选取较优参数。
                 例如n_tree_start = 1
-                
+
             n_tree_end : 数据类型为'int'
                 随机森林中决策树的数量。
                 给定一个可能取值的区间(左闭右开)，该参数为这个区间的右端点。程序将会在区间内选取较优参数。
@@ -251,14 +252,14 @@ class Regression:
             min_samples_leaf_step : 数据类型为'int'
                 每次测试时的步长。默认min_samples_leaf_step = 1
                 例如当步长min_samples_leaf_step = 3时，左端点min_samples_leaf_step = 1，右端点min_samples_leaf_step = 10，此时 叶子节点最少的样本数就在[1, 4, 7]中取一个较优值。
-            
+
             cv_num : 数据类型为'int'
                 S折交叉验证的折数。默认cv_num = 3
                 即将训练集分成多少份来进行交叉验证。如果样本较多的话，可以适度增大cv的值
 
             n_iter : 数据类型为'int'
-                训练次数，次数越大精度越高。默认n_iter=20           
-            
+                训练次数，次数越大精度越高。默认n_iter=20
+
         Returns
         -------
             model : object
@@ -281,13 +282,13 @@ class Regression:
             # 使用utils.py中的saveModel()函数将模型保存到本地
             saveModel('rf.pkl', rf)
             # 使用utils.py中的loadModel()函数来调用本地模型，并进行预测
-            y_pre = loadModel('rf.pkl').predict(X_test)                
+            y_pre = loadModel('rf.pkl').predict(X_test)
 
         Notes
         --------
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中rfRegressionParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
-        '''
+        """
         best_parm, best_score = rfRegressionParm(X_train, y_train,
                                                  n_tree_start, n_tree_end, n_tree_step,
                                                  max_depth_start, max_depth_end, max_depth_step,

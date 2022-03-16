@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.optim as optim
+import torchvision
 
 from net.MyDataset import *
 from net.resnet18 import init_weight
@@ -75,7 +76,7 @@ transform_test = torchvision.transforms.Compose([
 ])
 full_dataset = torchvision.datasets.ImageFolder(imgPath, 'label.txt', transform_train)
 
-trainloader, testloader, valloader = load_local_dataset(full_dataset, BATCH_SIZE)
+trainLoader, testLoader, valLoader = load_local_dataset(full_dataset, BATCH_SIZE)
 net = ResNet50(ResidualBlock, 1, 3).to(device)
 net.apply(init_weight)
 
@@ -92,5 +93,5 @@ if __name__ == "__main__":
     with open("res/test.txt", "w") as f:
         with open("res/log.txt", "w") as f2:
             with open("res/val.txt", 'w') as f3:
-                startTrain(net, trainloader, testloader, valloader,
+                startTrain(net, trainLoader, testLoader, valLoader,
                            EPOCH, loss, optimizer, f2, f, f3, savePath=modelPath)

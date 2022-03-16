@@ -1,10 +1,3 @@
-import cv2
-
-
-from scipy.stats import pearsonr
-
-
-
 def saveModel(pkl_filename, obj):
     """
     持久化对象
@@ -1040,10 +1033,10 @@ def armaModel(data, pmax, qmax):
 
 
 class GraySystem:
-    '''
+    """
     该类主要包括灰色关联度分析和多因素灰色预测模型
 
-    '''
+    """
 
     def AGO(self, m):
         '''
@@ -1064,6 +1057,7 @@ class GraySystem:
                 x0 = [104, 101.8, 105.8, 111.5, 115.97, 120.03, 113.3, 116.4, 105.1, 83.4, 73.3]
 
         '''
+        import numpy as np
         li = np.zeros(shape=m.shape)
         for i in range(m.__len__()):
             temp = 0
@@ -1073,7 +1067,7 @@ class GraySystem:
         return li
 
     def MEAN(self, m):
-        '''
+        """
         均值生成算子
 
         Parameters
@@ -1090,7 +1084,8 @@ class GraySystem:
                 邻均值序列
                 x0 = [104, 101.8, 105.8, 111.5, 115.97, 120.03, 113.3, 116.4, 105.1, 83.4, 73.3]
 
-        '''
+        """
+        import numpy as np
         li = np.zeros(shape=m.shape)
         for i in range(m.__len__()):
             if i == 0:
@@ -1100,7 +1095,7 @@ class GraySystem:
         return li
 
     def greyRelationAnalysis(self, X, y):
-        '''
+        """
         灰色关联度分析
 
         Parameters
@@ -1129,7 +1124,7 @@ class GraySystem:
             r : 形状为(特征数量, )的'numpy类型数组'
                 关联度数组
                 例如r = [0.72135605 0.69545271 0.65791122 0.73256354]
-        
+
         Examples
         -------
             a = [560823, 542386, 604834, 591248, 583031, 640636, 575688, 689637, 570790, 519574, 614677]
@@ -1140,7 +1135,8 @@ class GraySystem:
             r = gs.greyRelationAnalysis(np.array(mat([x0, x1, x2, x3]).T), np.array(mat(a).T))
             # print(r)结果为r = [0.72135605 0.69545271 0.65791122 0.73256354]
 
-        '''
+        """
+        import numpy as np
         y = np.array(y, dtype=float).ravel()
         X_mean = X.mean(axis=0)
         y_mean = y.mean(axis=0)
@@ -1150,8 +1146,8 @@ class GraySystem:
             y[i] = y[i] / y_mean
         new = []
         for i in range(X.shape[1]):
-            new.append(np.array(mat(X[:, i] - y)))
-        new = np.array(mat(np.array(new)).T)
+            new.append(np.array(np.mat(X[:, i] - y)))
+        new = np.array(np.mat(np.array(new)).T)
         # new = np.array(mat(new).T)
         mmax = np.max(np.max(new.__abs__(), axis=0))
         mmin = np.min(np.min(new.__abs__(), axis=0))
@@ -1163,7 +1159,7 @@ class GraySystem:
         return r
 
     def greyPredictiveParm(self, X_original, y_original):
-        '''
+        """
         获得发展系数和驱动系数
 
         Parameters
@@ -1185,7 +1181,8 @@ class GraySystem:
                 GM(1, n)模型中的驱动系数列表。
                 每一个值代表对应相关因素序列的驱动系数。
 
-        '''
+        """
+        import numpy as np
         xi = []
         for i in range(X_original.shape[0]):
             xi.append(self.AGO(X_original[i, :]))
@@ -1193,10 +1190,10 @@ class GraySystem:
         z = self.MEAN(np.array(self.AGO(y_original)))
         Y = y_original.reshape(-1, 1)
         Y = np.delete(Y, 0)
-        Y = mat(Y)
-        B = np.array(mat(xi[:, 1:]).T)
+        Y = np.mat(Y)
+        B = np.array(np.mat(xi[:, 1:]).T)
         B = np.insert(B, 0, -z, 1)
-        B = mat(B)
+        B = np.mat(B)
         theat = np.linalg.inv(B.T.dot(B)).dot(B.T).dot(Y.T)
         al = theat[0, 0]
         b = theat[1:, :].T
@@ -1204,7 +1201,7 @@ class GraySystem:
         return al, b
 
     def greyPredictiveModel(self, X_new, al, b, y_first):
-        '''
+        """
         多因素灰色预测模型
 
         Parameters
@@ -1234,7 +1231,7 @@ class GraySystem:
             G : 形状为(系统特征数据数量, )的numpy类型数组
                 系统特征数据序列(预测值)。
                 每一个值都是目标在该时间节点，多个因素影响下的结果。
-        
+
         Examples
         -------
             # 根据已知数据得出参数al, b
@@ -1252,7 +1249,8 @@ class GraySystem:
             x_3 = [56.1,55.9,51.8,58.3,53.4,56.7,56.2]
             G = gs.greyPredictiveModel(np.array([x_0, x_1, x_2, x_3]), al, b, a[len(a) - 1])
 
-        '''
+        """
+        import numpy as np
         xi = []
         for i in range(X_new.shape[0]):
             xi.append(self.AGO(X_new[i, :]))
@@ -1261,7 +1259,7 @@ class GraySystem:
         for j in range(xi.shape[1]):
             sum1 = 0
             for i in range(xi.shape[0]):
-                sum1 += mat(xi)[i, j] * b[i]
+                sum1 += np.mat(xi)[i, j] * b[i]
             U.append(sum1)
         F = []
         f = 1
@@ -1280,15 +1278,16 @@ class GraySystem:
 
 
 def find_max_region(file, mbKSize):
-    '''
+    """
     最大连通区域
     :param file:
     :param mbKSize:
     :return:
-    '''
+    """
     import cv2
-    img = cv2.cvtColor(file, code=cv2.COLOR_RGB2GRAY)
-    img7 = cv2.medianBlur(src=img, ksize=mbKSize)
+    import numpy as np
+    img7 = denoise(img=np.copy(file), n=10, kernel_size=mbKSize)
+    # img7 = cv2.medianBlur(np.copy(file), mbKSize)
     ret, threshold = cv2.threshold(img7, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
     labelNum = 0
@@ -1322,24 +1321,26 @@ def find_max_region(file, mbKSize):
 
 
 def binaryMask(mask_file):
-    '''
+    """
     掩膜二值化
     :param mask_file:
     :return:
-    '''
+    """
     for i in range(mask_file.shape[0]):
         for j in range(mask_file.shape[1]):
             mask_file[i][j] = 1 if (mask_file[i][j] == 255) else 0
 
 
 def bow(descriptor_list, k, label):
-    '''
+    """
     词袋算法
     :param descriptor_list: 图片数据集的特征描述子列表
     :param k: 要将特征描述子分成几类
     :param label: 图片标签
     :return:
-    '''
+    """
+    from sklearn.cluster import KMeans
+    import numpy as np
     ret = []
     for item in descriptor_list:
         item = item.reshape(-1, 1)
@@ -1349,87 +1350,60 @@ def bow(descriptor_list, k, label):
         unique, counts = np.unique(y_pre, return_counts=True)
         frequency = dict(zip(unique, counts / l))
         ret.append(list(frequency.values()))
-    ret = np.insert(np.array(mat(ret)), k, label, axis=1)
+    ret = np.insert(np.array(np.mat(ret)), k, label, axis=1)
     return ret
 
 
-def surfaceFitting(img, k, deg=3, plot=False):
-    '''
-    表面拟合
-    Parameters
-    ----------
-        img：数据类型为numpy.narray
-            图片数据
+def surfaceFitting(img, deg=3, mbSize=5, model: object = None):
+    import numpy as np
 
-        k：数据类型为int
-            提取拟合数据点用到的阈值k
-            将图片中低于k的灰度值置为0。
-
-        deg:数据类型为int
-            拟合使用的多项式的阶数
-            默认为3
-
-        plot：数据类型为boolean
-            是否展示绘制拟合的结果。
-            默认为False
-
-    Returns
-    -------
-        surfacePosition:数据类型为numpy.array
-            表面位置数组
-            其中的每一个数 value,有这样一个关系：col_index = img.shape[1] - value
-
-        ret:数据类型为numpy.narray
-            拟合点的图片
-
-    '''
-    ret = np.copy(img)
-    for i in range(ret.shape[0]):
-        for j in range(ret.shape[1]):
-            if ret[i][j] <= (k):
-                ret[i][j] = 0
-    temp = []
-    for i in range(ret.shape[1]):
-        fd = np.flipud(ret[:, i])
-        j = ret.shape[1]
+    region = find_max_region(img, mbSize)
+    col = region.shape[1]
+    row = region.shape[0]
+    location = []
+    for i in range(col):
+        temp = region[:, i]
+        j = row - 1
         while j > 0:
-            if j != 0 and j < 500 and fd[j] != 0:
-                temp.append((512 - j, i + 1))
+            if temp[j] > 0:
+                location.append(j)
                 break
             j -= 1
+    temp = []
+    for i in range(len(location)):
+        temp.append((location[i], i + 1))
     temp = np.array(temp)
     X = temp[:, 1]
     y = temp[:, 0]
-    z1 = np.polyfit(X, y, deg)
-    p1 = np.poly1d(z1)
-    X_test = [i + 1 for i in range(ret.shape[1])]
-    surfacePosition = np.array(p1(X_test), dtype=np.int32)
-    if plot:
-        pts1 = np.concatenate((X_test, surfacePosition)).reshape((2, 512)).T
-        test = cv2.polylines(np.copy(img), [pts1], False, color=(255, 0, 0))
-        cv2.imshow('press to continue', test)
-        cv2.waitKey(0)
-    return surfacePosition, ret
+    X_test = [i + 1 for i in range(img.shape[1])]
+    if model is not None:
+        surfacePosition = model.predict(X_test)
+    else:
+        z1 = np.polyfit(X, y, deg)
+        p1 = np.poly1d(z1)
+        surfacePosition = np.array(p1(X_test), dtype=np.int32)
+    return surfacePosition
 
 
 def flatten(img, surfacePosition):
-    '''
+    """
     展平图片
     Parameters
     ----------
-        img:数据类型为numpy.narray
-            图片数据
+    img:数据类型为numpy.narray
+        图片数据
 
-        surfacePosition：数据类型为numpy.array
-            表面位置索引数组
-            由列向量索引组成，长度等于图片的列向量数量
-            例如np.array([224, 212, 264, 203 ....，123])
+    surfacePosition：数据类型为numpy.array
+        表面位置索引数组
+        由列向量索引组成，长度等于图片的列向量数量
+        例如np.array([224, 212, 264, 203 ....，123])
 
     Returns
     -------
         ret：数据类型为numpy.narray
             展平后的图片
-    '''
+    """
+    import numpy as np
     ret = np.zeros(shape=img.shape, dtype=np.uint8)
     imax = np.max(surfacePosition)
     imin = np.min(surfacePosition)
@@ -1451,37 +1425,39 @@ def flatten(img, surfacePosition):
 
 
 def denoise(img, n, kernel_size=3):
-    '''
+    """
     图片去噪
     Parameters
     ----------
-        img:数据类型为numpy.narray
-            图片数据
+    img:数据类型为numpy.narray
+        图片数据
 
-        n:数据类型为int
-            使用前n行的均值和标准差进行阈值去噪
+    n:数据类型为int
+        使用前n行的均值和标准差进行阈值去噪
 
-        kernel_size：数据类型为int
-            中值滤波核的大小
+    kernel_size：数据类型为int
+        中值滤波核的大小
 
     Returns
     -------
         ret:数据类型为numpy.narray
             返回图片
 
-    '''
-    ret = cv2.medianBlur(img, kernel_size)
+    """
+    import numpy as np
+    import cv2
+    ret = np.copy(img)
     k = []
     num = 0
     sum = 0
     for i in range(n):
         for j in range(ret.shape[1]):
-            if ret[i][j] <= (5):
+            if ret[i][j] <= 4:
                 continue
             sum += ret[i][j]
             k.append(ret[i][j])
             num += 1
-    ave = num / sum
+    ave = sum / num
     sum = 0
     for value in k:
         sum += np.power(value - ave, 2)
@@ -1490,6 +1466,11 @@ def denoise(img, n, kernel_size=3):
         for j in range(ret.shape[1]):
             if ret[i][j] <= sd + ave:
                 ret[i][j] = 0
+    for i in range(30):
+        for j in range(ret.shape[1]):
+            ret[i, j] = 0
+            ret[511 - i, j] = 0
+    ret = cv2.medianBlur(ret, ksize=kernel_size)
     return ret
 
 
@@ -1558,3 +1539,23 @@ def get_data(feature_path: str):
     X = contents[:, :-1].astype(np.float64)
     y = contents[:, -1].astype(np.float64)
     return X, y
+
+
+def standardization(img, ksize=15):
+    import numpy as np
+    import cv2
+    ret = np.copy(img)
+    temp = cv2.medianBlur(img, ksize=13)
+    row = ret.shape[0]
+    col = ret.shape[1]
+    max_temp = np.max(temp)
+    max = np.max(ret)
+    min = np.min(ret)
+    Im = 1.03 * max_temp
+    for i in range(row):
+        for j in range(col):
+            if ret[i][j] <= Im:
+                ret[i][j] = Im * (ret[i][j] - min) / (max - min)
+            else:
+                ret[i][j] = Im
+    return ret
