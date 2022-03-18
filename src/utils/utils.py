@@ -1277,17 +1277,45 @@ class GraySystem:
         return G
 
 
-def find_max_region(file, mbKSize):
+def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bottomMargin=40):
     """
     最大连通区域
-    :param file:
-    :param mbKSize:
-    :return:
+    Parameters
+    ----------
+    file : narray
+        图片数据
+    mbKSize : int
+        中值滤波核大小.
+        作用为平滑图像
+    denoiseScheme : string
+        当镜面反射和下表面有接触的时候，连通区域可能会包含镜面反射内容，这个时候选用'mediaBlur'模式
+        没有上述情况就保持'default'模式
+    topMargin
+    bottomMargin
+
+    Returns
+    -------
+
     """
     import cv2
     import numpy as np
-    img7 = denoise(img=np.copy(file), n=10, kernel_size=mbKSize)
-    # img7 = cv2.medianBlur(np.copy(file), mbKSize)
+
+    temp = np.copy(file)
+    if denoiseScheme == 'default':
+        # 不需要对镜面反射做处理
+        img7 = denoise(img=temp, n=10, mbSize=mbKSize)
+    elif denoiseScheme == 'mediaBlur':
+        # 中值滤波下需要对镜面反射做处理
+        colNum = temp.shape[1]
+        for col in range(colNum - 1):
+            for i in range(topMargin):
+                temp[i][col] = 0
+            for j in range(colNum - bottomMargin - 1, colNum):
+                temp[j][col] = 0
+        img7 = cv2.medianBlur(temp, mbKSize)
+    else:
+        print("denoiseScheme = 'default' or 'mediaBlur'!\n")
+        exit(1)
     ret, threshold = cv2.threshold(img7, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
     labelNum = 0
@@ -1354,10 +1382,40 @@ def bow(descriptor_list, k, label):
     return ret
 
 
-def surfaceFitting(img, deg=3, mbSize=5, model: object = None):
-    import numpy as np
+def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, denoiseScheme: str = 'default'):
+    """
+    表面拟合
+    Parameters
+    ----------
+    denoiseScheme
+    img : narray
+        图像数据
+    deg : int
+        拟合曲线的阶数,只有在model=None的时候才生效
+    mbSize : int
+        中值滤波核的大小，用来平滑图像
+    model : object
+        预训练的回归模型，默认为None
 
-    region = find_max_region(img, mbSize)
+    Returns
+    -------
+    surfacePosition : array_like
+        确定表面位置
+    location : array_like
+        预估计表面位置
+    Notes
+    -----
+    根据图像的特性来调参，若在种子OCT图像中发现有断层出现在内部，这个时候连通区域可能会出现较大的缺损，
+    可以使用一阶函数去拟合。
+
+    """
+    import numpy as np
+    import cv2
+
+    # 找出最大连通区域
+    region = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
+    region = cv2.erode(region, kernel=(3, 3), iterations=3)
+    # 从下往上找出每一列中第一个大于0的值， 存入到location数组中
     col = region.shape[1]
     row = region.shape[0]
     location = []
@@ -1369,6 +1427,7 @@ def surfaceFitting(img, deg=3, mbSize=5, model: object = None):
                 location.append(j)
                 break
             j -= 1
+    # 将location数组中的值当做目标值，将x横坐标当做自变量，进行拟合
     temp = []
     for i in range(len(location)):
         temp.append((location[i], i + 1))
@@ -1382,7 +1441,7 @@ def surfaceFitting(img, deg=3, mbSize=5, model: object = None):
         z1 = np.polyfit(X, y, deg)
         p1 = np.poly1d(z1)
         surfacePosition = np.array(p1(X_test), dtype=np.int32)
-    return surfacePosition
+    return surfacePosition, location
 
 
 def flatten(img, surfacePosition):
@@ -1390,18 +1449,16 @@ def flatten(img, surfacePosition):
     展平图片
     Parameters
     ----------
-    img:数据类型为numpy.narray
+    img : 数据类型为numpy.narray
         图片数据
-
-    surfacePosition：数据类型为numpy.array
-        表面位置索引数组
-        由列向量索引组成，长度等于图片的列向量数量
+    surfacePosition ：数据类型为numpy.array
+        表面位置索引数组，由列向量索引组成，长度等于图片的列向量数量
         例如np.array([224, 212, 264, 203 ....，123])
 
     Returns
     -------
-        ret：数据类型为numpy.narray
-            展平后的图片
+    ret：数据类型为numpy.narray
+        展平后的图片
     """
     import numpy as np
     ret = np.zeros(shape=img.shape, dtype=np.uint8)
@@ -1424,19 +1481,18 @@ def flatten(img, surfacePosition):
     return ret
 
 
-def denoise(img, n, kernel_size=3):
+def denoise(img, n: int, mbSize: int = 3):
     """
     图片去噪
     Parameters
     ----------
+    mbSize : int
+        中值滤波核大小，作用为平滑图像边缘，一般选取小滤波核
     img:数据类型为numpy.narray
         图片数据
 
     n:数据类型为int
         使用前n行的均值和标准差进行阈值去噪
-
-    kernel_size：数据类型为int
-        中值滤波核的大小
 
     Returns
     -------
@@ -1470,7 +1526,7 @@ def denoise(img, n, kernel_size=3):
         for j in range(ret.shape[1]):
             ret[i, j] = 0
             ret[511 - i, j] = 0
-    ret = cv2.medianBlur(ret, ksize=kernel_size)
+    ret = cv2.medianBlur(ret, ksize=mbSize)
     return ret
 
 
@@ -1542,16 +1598,27 @@ def get_data(feature_path: str):
 
 
 def standardization(img, ksize=15):
+    """
+    对图像进行标准化
+    Parameters
+    ----------
+    img
+    ksize
+
+    Returns
+    -------
+
+    """
     import numpy as np
     import cv2
+    row = img.shape[0]
+    col = img.shape[1]
     ret = np.copy(img)
-    temp = cv2.medianBlur(img, ksize=13)
-    row = ret.shape[0]
-    col = ret.shape[1]
+    temp = cv2.medianBlur(img, ksize=15)
     max_temp = np.max(temp)
-    max = np.max(ret)
-    min = np.min(ret)
-    Im = 1.03 * max_temp
+    max = np.max(ret[39:-25, :])
+    min = np.min(ret[39:-25, :])
+    Im = 1.05 * max_temp
     for i in range(row):
         for j in range(col):
             if ret[i][j] <= Im:
