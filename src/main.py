@@ -62,22 +62,20 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
             testLog.flush()
 
 
-EPOCH = 300
-BATCH_SIZE = 5
+EPOCH = 20
+BATCH_SIZE = 3
 LR = 0.01
-
-imgPath = '../sources/dataset/'
+imgPath = '../sources/dataset/dataset/'
 transform_train = torchvision.transforms.Compose([
-    torchvision.transforms.RandomRotation((-20, 20)),
+    torchvision.transforms.Resize(size=(224, 224)),
+    torchvision.transforms.RandomHorizontalFlip(p=0.5),
     torchvision.transforms.ToTensor(),
 ])
-transform_test = torchvision.transforms.Compose([
-    torchvision.transforms.ToTensor(),
-])
+
 full_dataset = torchvision.datasets.ImageFolder(imgPath, 'label.txt', transform_train)
 
 trainLoader, testLoader, valLoader = load_local_dataset(full_dataset, BATCH_SIZE)
-net = ResNet50(ResidualBlock, 1, 3).to(device)
+net = ResNet50(ResidualBlock, 1, 5).to(device)
 net.apply(init_weight)
 
 loss = nn.CrossEntropyLoss()
@@ -85,7 +83,7 @@ optimizer = optim.SGD(net.parameters(), lr=LR)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10)
 
 if __name__ == "__main__":
-    modelPath = '../../autodl-nas/model/'
+    modelPath = 'model/'
     if not os.path.exists(modelPath):
         os.makedirs(modelPath)
     if not os.path.exists('res'):
