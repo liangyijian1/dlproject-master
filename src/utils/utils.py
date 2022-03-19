@@ -1631,9 +1631,10 @@ def standardization(img, ksize=15):
 def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, crop: list, deg: int = 3, mbKSize: int = 11,
                  denoiseScheme: str = 'default'):
     """
-
+    对一个根目录下的所有类别OCT图像，进行一种展平操作
     Parameters
     ----------
+    crop
     root_path
     dir_list
     log_path
@@ -1662,6 +1663,20 @@ def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, 
                 ...
         src:
             test.py
+    如果需要看 原图 去噪图 掩膜 预估计点 拟合点 展平后的图像排列
+    ret = ut.standardization(img)
+    region = ut.find_max_region(ret, 9, denoiseScheme='default')
+    y, _ = ut.surfaceFitting(ret, deg=2, mbSize=9)
+    fitted_location_img = np.copy(img)
+    original_location_img = np.copy(img)
+    for i in range(fitted_location_img.shape[1]):
+        fitted_location_img[y[i]][i] = 255
+    for i in range(len(_)):
+        k = _[i]
+        original_location_img[k[0]][k[1] - 1] = 255
+    flattened_img = ut.flatten(img, [512 - i for i in y])
+    merge = np.hstack((img, ret, region, original_location_img, fitted_location_img, flattened_img))
+    cv2.imwrite('14_181.jpg', merge)
 
     """
     import time
