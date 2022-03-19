@@ -1384,7 +1384,7 @@ def bow(descriptor_list, k, label):
 
 def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, denoiseScheme: str = 'default'):
     """
-    表面拟合
+    通过连通区域来进行表面拟合
     Parameters
     ----------
     denoiseScheme
@@ -1424,16 +1424,13 @@ def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, den
         j = row - 1
         while j > 0:
             if temp[j] > 0:
-                location.append(j)
+                location.append((j, i + 1))
                 break
             j -= 1
-    # 将location数组中的值当做目标值，将x横坐标当做自变量，进行拟合
-    temp = []
-    for i in range(len(location)):
-        temp.append((location[i], i + 1))
-    temp = np.array(temp)
-    X = temp[:, 1]
-    y = temp[:, 0]
+    # 将location数组中的值当做目标值，将x横坐标当做自变量，进行拟
+    location = np.array(location)
+    X = location[:, 1]
+    y = location[:, 0]
     X_test = [i + 1 for i in range(img.shape[1])]
     if model is not None:
         surfacePosition = model.predict(X_test)
@@ -1441,6 +1438,9 @@ def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, den
         z1 = np.polyfit(X, y, deg)
         p1 = np.poly1d(z1)
         surfacePosition = np.array(p1(X_test), dtype=np.int32)
+    for idx, item in enumerate(surfacePosition):
+        if item > row:
+            surfacePosition[idx] = row - 1
     return surfacePosition, location
 
 
@@ -1524,8 +1524,8 @@ def denoise(img, n: int, mbSize: int = 3):
                 ret[i][j] = 0
     for i in range(30):
         for j in range(ret.shape[1]):
-            ret[i, j] = 0
-            ret[511 - i, j] = 0
+            ret[i][j] = 0
+            ret[ret.shape[0] - 1 - i][j] = 0
     ret = cv2.medianBlur(ret, ksize=mbSize)
     return ret
 
@@ -1626,3 +1626,81 @@ def standardization(img, ksize=15):
             else:
                 ret[i][j] = Im
     return ret
+
+
+def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, crop: list, deg: int = 3, mbKSize: int = 11,
+                 denoiseScheme: str = 'default'):
+    """
+
+    Parameters
+    ----------
+    root_path
+    dir_list
+    log_path
+    save_path
+    deg
+    mbKSize
+    denoiseScheme
+
+    Returns
+    -------
+    Notes
+    -----
+    只对一部分类别图像进行操作,下面例子中dataset中有class1类别图像，在其中再创建两个文件夹done和failed，将一部分图片复制到failed中，并且将
+    img_root_path = root_path + dir改成img_root_path = root_path + dir + '/failed/'。然后test.py中调用，
+    startFlatten(root_path='../sources/dataset/', dir_list=['12'], log_path='log.txt',
+                 save_path='../sources/dataset/12/done/', deg=1, mbKSize=9)
+    目录结构:
+    project:
+        sources:
+            dataset:
+                class1:
+                    done:
+                    failed:
+                    1.jpg
+                    ...
+                ...
+        src:
+            test.py
+
+    """
+    import time
+    import os
+    import cv2
+    with open(log_path, 'a+') as f:
+        for dir in dir_list:
+            img_root_path = root_path + dir
+            img_list = os.listdir(img_root_path)
+            print(dir + '开始：')
+            f.write(dir + '开始：')
+            f.write('\n')
+            for idx, img_name in enumerate(img_list):
+                try:
+                    if img_name[-3:] != 'jpg':
+                        continue
+                    img_path = img_root_path + img_name
+                    if not os.path.exists(save_path):
+                        os.mkdir(save_path)
+                    img = cv2.imread(img_path, flags=0)
+                    time_start = time.time()
+                    ret = standardization(img)
+                    y, _ = surfaceFitting(ret, deg=deg, mbSize=mbKSize, denoiseScheme=denoiseScheme)
+                    img = flatten(img, [512 - i for i in y])
+                    img = cropImg(img, crop[0], crop[1], crop[2], crop[3])
+                    cv2.imwrite(save_path + '1-' + img_name, img)
+                    end_time = time.time()
+                    processing_time = abs(time_start - end_time)
+                    print('total: {} current: {} '.format(len(img_list),
+                                                          idx + 1) + img_name + ' done, processing time is: ' + processing_time.__str__() + ' s')
+                    f.write('total: {} current: {} '.format(len(img_list),
+                                                            idx + 1) + img_name + ' done, processing time is: ' + processing_time.__str__() + ' s')
+                    f.write('\n')
+                except Exception as e:
+                    print('total: {} current: {} '.format(len(img_list),
+                                                          idx + 1) + img_name + ' failed, processing time is: ' + processing_time.__str__() + ' s')
+                    f.write('total: {} current: {} '.format(len(img_list),
+                                                            idx + 1) + img_name + ' failed' + 'reason: ' + e.__str__() + ', processing time is: ' + processing_time.__str__() + ' s')
+                    f.write('\n')
+            print(dir + '结束\n')
+            f.write(dir + '结束\n')
+            f.write('\n')
