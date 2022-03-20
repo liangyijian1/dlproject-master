@@ -291,6 +291,7 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中rfRegressionParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         """
+        from sklearn import ensemble
         best_parm, best_score = rfRegressionParm(X_train, y_train,
                                                  n_tree_start, n_tree_end, n_tree_step,
                                                  max_depth_start, max_depth_end, max_depth_step,
@@ -358,9 +359,9 @@ class Regression:
             # 直接使用predict()函数进行预测
             y_pre = knn.predict(X_test)
             # 使用utils.py中的saveModel()函数将模型保存到本地
-            saveModel('knn.pkl', knn)
+            saveModel('svm.pkl', knn)
             # 使用utils.py中的loadModel()函数来调用本地模型，并进行预测
-            y_pre = loadModel('knn.pkl').predict(X_test)                
+            y_pre = loadModel('svm.pkl').predict(X_test)
 
         Notes
         --------
@@ -449,6 +450,7 @@ class Regression:
             svm作为基学习器，base_estimator = SVR()
 
         '''
+        from sklearn import ensemble
         best_parm, best_score = baggingRegressionParm(X_train, y_train, base_estimator, n_estimators_start,
                                                       n_estimators_end, n_estimators_step, cv_num, -1)
         model = ensemble.BaggingRegressor(base_estimator=base_estimator,
@@ -538,6 +540,7 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中adaBoostRegressionParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         '''
+        from sklearn import ensemble
         best_parm, best_score = adaBoostRegressionParm(X_train, y_train, n_estimators_start, n_estimators_end,
                                                        n_estimators_step, max_depth_start, max_depth_end,
                                                        max_depth_step, cv_num, n_iter, -1)
@@ -679,6 +682,7 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中gradientBoostingParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         '''
+        from sklearn import ensemble
         best_parm, best_score = gradientBoostingParm(X_train, y_train,
                                                      n_estimators_start, n_estimators_end,
                                                      max_depth_start, max_depth_end,
@@ -763,6 +767,7 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中lassoParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         '''
+        from sklearn.linear_model import Lasso
         best_parm, best_score = lassoParm(X_train, y_train, alpha, max_iter, cv_num=cv_num, n_iter=n_iter, n_jobs=-1)
         model = Lasso(alpha=best_parm['alpha'], max_iter=max_iter).fit(X_train, y_train)
         return model, best_parm, best_score
@@ -803,6 +808,7 @@ class Regression:
                 以使的平方残差之和最小，np.power(f(xdata, *res) - ydata, 2)
                 
         '''
+        from scipy.optimize import curve_fit
         res, pcov = curve_fit(
             f=f,
             xdata=X_train,

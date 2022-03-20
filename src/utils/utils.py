@@ -1,4 +1,6 @@
 import torch
+
+
 from torch.utils.data import DataLoader
 
 
@@ -225,6 +227,7 @@ def svrParm(X, y, C, gama, epsilon, cv_num=3, n_iter=20, n_jobs=-1):
         best_parm, best_score = svrParm(X_train, y_train, C=C, gama=gama, epsilon=epsilon, cv_num=cv_num, n_iter=n_iter)
 
     '''
+    from sklearn.svm import SVR
     # {'C': 10.0, 'epsilon': 0.0, 'gamma': 0.7142857142857143}
     parm_list = {"C": C, "gamma": gama, "epsilon": epsilon}
     best_params, best_score = findBestParmByRandomizedSearchCV(X, y, SVR(), cv_num=cv_num, parm_list=parm_list,
@@ -377,6 +380,8 @@ def rfRegressionParm(X, y,
                                                 10, 20)
 
     '''
+    import numpy as np
+    from sklearn import ensemble
     parm_grid = {'n_estimators': np.arange(n_tree_start, n_tree_end, n_tree_step),
                  'max_depth': np.arange(max_depth_start, max_depth_end, max_depth_step),
                  'max_features': ['auto', 'sqrt', 'log2'],
