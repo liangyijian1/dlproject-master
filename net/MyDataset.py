@@ -1,8 +1,8 @@
+import os
+
 import torch.utils.data
 from PIL import Image
 from torch.utils.data.dataset import T_co
-
-from src.utils.preprocess import *
 
 
 def get_txt(imgPath, label, txtPath):
@@ -51,7 +51,7 @@ def img_preprocess_test(basePath):
 
 
 def load_local_dataset(all_dataset, batch_size):
-    pre_size = int(0.8 * len(all_dataset))
+    pre_size = int(0.9 * len(all_dataset))
     val_size = len(all_dataset) - pre_size
     train_size = int(0.8 * pre_size)
     test_size = pre_size - train_size
@@ -66,27 +66,27 @@ def load_local_dataset(all_dataset, batch_size):
     return trainloader, testloader, valloader
 
 # if __name__ == '__main__':
-    # img_preprocess_test('../sources/dataset/dataset/')
-    # img_preprocess('../sources/6/', '6', 185, 3.5)
-    # img_preprocess('../sources/9/', '9', 180, 2.5)
+# img_preprocess_test('../sources/dataset/dataset/')
+# img_preprocess('../sources/6/', '6', 185, 3.5)
+# img_preprocess('../sources/9/', '9', 180, 2.5)
 
-    # imgPaths = ['../sources/dataset/img/']
-    # txtPaths = ['../sources/txt/img.txt']
-    # k = 6
-    # for i in range(1):
-    #     dataset = MyDataset(imgPath=imgPaths[i], txtPath=txtPaths[i], label=k)
-    #     k += 3
+# imgPaths = ['../sources/dataset/img/']
+# txtPaths = ['../sources/txt/img.txt']
+# k = 6
+# for i in range(1):
+#     dataset = MyDataset(imgPath=imgPaths[i], txtPath=txtPaths[i], label=k)
+#     k += 3
 
-    # pathsNames = os.listdir(imgPaths[0])
-    # for idx, pathName in enumerate(pathsNames):
-    #     imgNames = os.listdir(imgPaths[0] + pathName)
-    #     label = imgNames[0].split('-')[-1].split('.')[0]
-    #     dataset = MyDataset(imgPath=imgPaths[0] + pathName + '/', txtPath=txtPaths[0] + pathName + '.txt', label=label)
+# pathsNames = os.listdir(imgPaths[0])
+# for idx, pathName in enumerate(pathsNames):
+#     imgNames = os.listdir(imgPaths[0] + pathName)
+#     label = imgNames[0].split('-')[-1].split('.')[0]
+#     dataset = MyDataset(imgPath=imgPaths[0] + pathName + '/', txtPath=txtPaths[0] + pathName + '.txt', label=label)
 
-    # txtNames = os.listdir(txtPaths[0])
-    # for txtName in txtNames:
-    #     appendFileName(txtPaths[0] + txtName, txtPaths[0] + 'img.txt')
+# txtNames = os.listdir(txtPaths[0])
+# for txtName in txtNames:
+#     appendFileName(txtPaths[0] + txtName, txtPaths[0] + 'img.txt')
 
-    # pathsNames = os.listdir(imgPaths[0])
-    # for item in pathsNames:
-    #     copyD2D(imgPaths[0] + item + '/', '../sources/dataset/img/')
+# pathsNames = os.listdir(imgPaths[0])
+# for item in pathsNames:
+#     copyD2D(imgPaths[0] + item + '/', '../sources/dataset/img/')

@@ -62,7 +62,7 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
             testLog.flush()
 
 
-EPOCH = 20
+EPOCH = 21
 BATCH_SIZE = 3
 LR = 0.01
 imgPath = '../sources/dataset/dataset/'
@@ -72,7 +72,7 @@ transform_train = torchvision.transforms.Compose([
     torchvision.transforms.ToTensor(),
 ])
 
-full_dataset = torchvision.datasets.ImageFolder(imgPath, 'label.txt', transform_train)
+full_dataset = torchvision.datasets.ImageFolder(imgPath, './label.txt', transform_train)
 
 trainLoader, testLoader, valLoader = load_local_dataset(full_dataset, BATCH_SIZE)
 net = ResNet50(ResidualBlock, 1, 5).to(device)
@@ -83,13 +83,13 @@ optimizer = optim.SGD(net.parameters(), lr=LR)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10)
 
 if __name__ == "__main__":
-    modelPath = 'model/'
+    modelPath = './model/'
     if not os.path.exists(modelPath):
         os.makedirs(modelPath)
-    if not os.path.exists('res'):
-        os.makedirs('res')
-    with open("res/test.txt", "w") as f:
-        with open("res/log.txt", "w") as f2:
-            with open("res/val.txt", 'w') as f3:
+    if not os.path.exists('./res'):
+        os.makedirs('./res')
+    with open("./res/test.txt", "w") as f:
+        with open("./res/log.txt", "w") as f2:
+            with open("./res/val.txt", 'w') as f3:
                 startTrain(net, trainLoader, testLoader, valLoader,
                            EPOCH, loss, optimizer, f2, f, f3, savePath=modelPath)

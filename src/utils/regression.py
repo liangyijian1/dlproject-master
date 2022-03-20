@@ -1,3 +1,5 @@
+
+
 from src.utils.utils import *
 
 
@@ -365,6 +367,7 @@ class Regression:
             自动调参默认开启全部CPU，如果需要更改，请修改源程序中knnRegressionParm函数中的n_jobs参数，当n_jobs = -1时启用全部cpu
 
         '''
+        from sklearn.neighbors import KNeighborsRegressor
         best_parm, best_score = knnRegressionParm(X_train, y_train, n_neighbors_start, n_neighbors_end,
                                                   n_neighbors_step, cv_num=cv_num, n_jobs=-1)
         model = KNeighborsRegressor(n_neighbors=best_parm['n_neighbors']).fit(X_train, y_train)

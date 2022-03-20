@@ -1,3 +1,7 @@
+import torch
+from torch.utils.data import DataLoader
+
+
 def saveModel(pkl_filename, obj):
     """
     持久化对象
@@ -38,9 +42,9 @@ def loadModel(pkl_filename):
 
 
 def findBestParmByGridSearchCv(X, y, estimator, parm_grid, cv_num=5, n_jobs=-1):
-    '''
+    """
     网格搜索寻找最优参数
-    
+
     Parameters
     ----------
         X : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
@@ -52,22 +56,22 @@ def findBestParmByGridSearchCv(X, y, estimator, parm_grid, cv_num=5, n_jobs=-1):
             目标值(真实值)。
             每一个参数是对应样本数据的目标值
             例如y_train = [16.50000,31.10000,10.50000]
-        
+
         estimator :数据类型为'object'
             基学习器对象。
             该对象被认为是实现了sklearn estimator接口的对象。按需求直接使用sklearn中的类对象。
             例如需要使用knn回归来作为基学习器，就必须要导入KNeighborsRegressor这个类，并且将该类的对象赋值给estimator参数,base_estimator=KNeighborsRegressor()。
             具体学习器对象请看下面Notes
-        
+
         parm_grid : 数据类型为'字典'
             待优化参数
             key为需要优化的参数名。value为列表。
             例如parm_grid = {"C": [0.1, 1.0], "gamma": [0.1], "epsilon": [0.1, 1.0]}
-            
+
         cv_num : 数据类型为'int'
             S折交叉验证的折数。默认cv_num = 5
             即将训练集分成多少份来进行交叉验证。如果样本较多的话，可以适度增大cv的值
-        
+
         n_jobs : 数据类型为'int'
             用来设定cpu的运行情况。默认n_jobs = -1为使用全部cpu
 
@@ -79,20 +83,21 @@ def findBestParmByGridSearchCv(X, y, estimator, parm_grid, cv_num=5, n_jobs=-1):
 
         best_score : 数据类型为'float'
             模型交叉验证得分
-        
+
     Examples
     --------
         parm_grid = {'n_neighbors': np.arange(n_neighbors_start, n_neighbors_end,n_neighbors_step)}
-        best_parm, best_score = findBestParmByGridSearchCv(X, y, estimator=KNeighborsRegressor(), parm_grid=parm_grid)  
+        best_parm, best_score = findBestParmByGridSearchCv(X, y, estimator=KNeighborsRegressor(), parm_grid=parm_grid)
 
     Notes
     --------
         knn作为基学习器，base_estimator = KNeighborsRegressor()
         决策树作为基学习器，base_estimator = DecisionTreeRegressor()
         随机森林作为基学习器，base_estimator = RandomForestRegressor()
-        svm作为基学习器，base_estimator = SVR()    
+        svm作为基学习器，base_estimator = SVR()
 
-    '''
+    """
+    from sklearn.model_selection import GridSearchCV
     grid = GridSearchCV(estimator=estimator, param_grid=parm_grid, cv=cv_num, n_jobs=n_jobs).fit(X, y)
     return grid.best_params_, grid.best_score_
 
@@ -489,6 +494,8 @@ def knnRegressionParm(X, y, n_neighbors_start, n_neighbors_end, n_neighbors_step
             模型交叉验证得分
 
     '''
+    from sklearn.neighbors import KNeighborsRegressor
+    import numpy as np
     parm_grid = {'n_neighbors': np.arange(n_neighbors_start, n_neighbors_end, n_neighbors_step)}
     best_parm, best_score = findBestParmByGridSearchCv(X, y, estimator=KNeighborsRegressor(), parm_grid=parm_grid,
                                                        cv_num=cv_num, n_jobs=n_jobs)
@@ -1300,23 +1307,24 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
     import cv2
     import numpy as np
 
-    temp = np.copy(file)
+    afterDenoise = None
     if denoiseScheme == 'default':
         # 不需要对镜面反射做处理
-        img7 = denoise(img=temp, n=10, mbSize=mbKSize)
+        afterDenoise = denoise(img=file, n=10, mbSize=mbKSize, q=35)
     elif denoiseScheme == 'mediaBlur':
         # 中值滤波下需要对镜面反射做处理
-        colNum = temp.shape[1]
+        colNum = file.shape[1]
         for col in range(colNum - 1):
             for i in range(topMargin):
-                temp[i][col] = 0
+                file[i][col] = 0
             for j in range(colNum - bottomMargin - 1, colNum):
-                temp[j][col] = 0
-        img7 = cv2.medianBlur(temp, mbKSize)
+                file[j][col] = 0
+        afterDenoise = cv2.medianBlur(file, mbKSize)
     else:
         print("denoiseScheme = 'default' or 'mediaBlur'!\n")
         exit(1)
-    ret, threshold = cv2.threshold(img7, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    temp = np.copy(afterDenoise)
+    ret, threshold = cv2.threshold(temp, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
     labelNum = 0
     for i in range(stats.shape[0]):
@@ -1345,7 +1353,7 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
     maxIdx = np.argmax(count_list) + 1
     mask = labels == maxIdx
     output[:, :][mask] = 255
-    return output
+    return output, afterDenoise
 
 
 def binaryMask(mask_file):
@@ -1413,7 +1421,7 @@ def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, den
     import cv2
 
     # 找出最大连通区域
-    region = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
+    region, _ = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
     region = cv2.erode(region, kernel=(3, 3), iterations=3)
     # 从下往上找出每一列中第一个大于0的值， 存入到location数组中
     col = region.shape[1]
@@ -1481,11 +1489,12 @@ def flatten(img, surfacePosition):
     return ret
 
 
-def denoise(img, n: int, mbSize: int = 3):
+def denoise(img, n: int, mbSize: int = 3, q: int = 30):
     """
     图片去噪
     Parameters
     ----------
+    q
     mbSize : int
         中值滤波核大小，作用为平滑图像边缘，一般选取小滤波核
     img:数据类型为numpy.narray
@@ -1508,7 +1517,7 @@ def denoise(img, n: int, mbSize: int = 3):
     sum = 0
     for i in range(n):
         for j in range(ret.shape[1]):
-            if ret[i][j] <= 4:
+            if ret[i][j] <= 3:
                 continue
             sum += ret[i][j]
             k.append(ret[i][j])
@@ -1522,7 +1531,7 @@ def denoise(img, n: int, mbSize: int = 3):
         for j in range(ret.shape[1]):
             if ret[i][j] <= sd + ave:
                 ret[i][j] = 0
-    for i in range(30):
+    for i in range(q):
         for j in range(ret.shape[1]):
             ret[i][j] = 0
             ret[ret.shape[0] - 1 - i][j] = 0
@@ -1571,13 +1580,34 @@ def cropImg(img, top=0, button=0, left=0, right=0):
     return ret
 
 
+def copyD2D(srcDir: str, dstDir: str):
+    """
+    將一個文件夾中的所有圖片copy到制定目錄
+    Parameters
+    ----------
+        srcDir: String
+            源目錄
+
+        dstDir: String
+            目標目錄
+
+    """
+    import os
+    from shutil import copy
+    srcNames = os.listdir(srcDir)
+    for item in srcNames:
+        copy(srcDir + item, dstDir)
+        print(dstDir + item + ' done!')
+
+
 def get_data(feature_path: str):
     """
     从特征向量文件（带标签）中分离出特征和标签
     Parameters
     ----------
-        feature_path：String
-            特征向量的路径
+    feature_path ：String
+        特征向量的路径
+
     Returns
     -------
         X：numpy.narray
@@ -1597,13 +1627,12 @@ def get_data(feature_path: str):
     return X, y
 
 
-def standardization(img, ksize=15):
+def standardization(img):
     """
     对图像进行标准化
     Parameters
     ----------
     img
-    ksize
 
     Returns
     -------
@@ -1628,7 +1657,8 @@ def standardization(img, ksize=15):
     return ret
 
 
-def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, crop: list, deg: int = 3, mbKSize: int = 11,
+def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, crop: list, deg: int = 3,
+                 mbKSize: int = 11,
                  denoiseScheme: str = 'default'):
     """
     对一个根目录下的所有类别OCT图像，进行一种展平操作
@@ -1665,7 +1695,7 @@ def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, 
             test.py
     如果需要看 原图 去噪图 掩膜 预估计点 拟合点 展平后的图像排列
     ret = ut.standardization(img)
-    region = ut.find_max_region(ret, 9, denoiseScheme='default')
+    region, afterDenoise = ut.find_max_region(ret, 9, denoiseScheme='default')
     y, _ = ut.surfaceFitting(ret, deg=2, mbSize=9)
     fitted_location_img = np.copy(img)
     original_location_img = np.copy(img)
@@ -1719,3 +1749,281 @@ def startFlatten(root_path: str, dir_list: list, log_path: str, save_path: str, 
             print(dir + '结束\n')
             f.write(dir + '结束\n')
             f.write('\n')
+
+
+class TestModel:
+    """
+    模型測試的類
+    """
+
+    def __init__(self, model, modelLocation, strict=True):
+        model.load_state_dict(torch.load(modelLocation), strict=strict)
+        self.model = model
+
+    def testSingleImg(self, img):
+        """
+        以單張圖片的格式來測試網絡
+        Parameters
+        ----------
+        img:數據類型爲numpy.narray
+            圖片數據
+
+        Returns
+        -------
+            預測類別
+
+        Examples
+        -------
+            img = cv2.imread('../sources/dataset/test/12-3.jpg', 0)
+            transform = torchvision.transforms.Compose([
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Resize(size=(224, 224)),
+                torchvision.transforms.RandomHorizontalFlip(p=0.5)
+            ])
+            k = TestModel(ResNet50(ResidualBlock, 1, 5), 'model/net_21.pth').testSingleImg(transform(img).view(1, 1, 224, 224))
+            print(k)
+        """
+        out = self.model(img)
+        _, prediction = torch.max(out, 1)
+        return prediction.numpy()[0]
+
+    def testDataLoader(self, dataLoader: DataLoader):
+        """
+        以DataLoader的形式來測試網絡預測的準確度，命令行會打印出準確率
+        Parameters
+        ----------
+        dataLoader: DataLoader
+            DataLoader類型的數據集
+
+        Examples
+        -------
+        TestModel(ResNet50(ResidualBlock, 3, 151), 'model/net_107.pth').testDataLoader(valloader)
+
+        """
+        correct = 0
+        total = 0
+        print('正在计算准确率...')
+        for i, data in enumerate(dataLoader):
+            inputs, labels = data
+            outputs = self.model(inputs)
+            _, prediction = torch.max(outputs, 1)
+            total += labels.size(0)
+            correct += prediction.eq(labels.data).cpu().sum()
+        print('Total Sample:{}, True Number:{}, Acc:{:.3f}%'.format(total, correct, 100. * correct / total))
+
+    def getFeatureVector(self, img):
+        """
+        将单张图片转换成特征向量
+        Parameters
+        ----------
+            img: 数据类型为numpy.narray
+                圖片數據，數組格式爲(1, channel_num, H, W)
+
+        Returns
+        -------
+            返回圖片的特徵向量
+        """
+        return self.model(img).detach().numpy().flatten()
+
+
+def getFeatureVectorPlus(img,
+                         img_save_path: str,
+                         res_save_path: str,
+                         k: int,
+                         deg: int,
+                         transform,
+                         model,
+                         model_dict_path: str,
+                         crop: list = [0, 0, 0, 0],
+                         strict: bool = False,
+                         n: int = 5,
+                         kernel_size: int = 3,
+                         progress: bool = False):
+    """
+    提取一张不经过任何处理图片的特征向量
+    Parameters
+    ----------
+    img
+    img_save_path
+    res_save_path
+    k
+    deg
+    transform
+    model
+    model_dict_path
+    crop
+    strict
+    n
+    kernel_size
+    progress
+
+    Returns
+    -------
+    Examples
+    --------
+       getFeatureVectorPlus(img=img,
+                            img_save_path='test/img/te-12-262.jpg',
+                            res_save_path='test/res/te-12-262.txt',
+                            k=190,
+                            deg=3,
+                            transform=torchvision.transforms.ToTensor(),
+                            model=ResNet50Regression(1),
+                            model_dict_path='model/net_22.pth',
+                            crop=[60, 0, 30, 30]
+                            )
+    """
+    import cv2
+    import numpy as np
+    surface, _ = surfaceFitting(img, deg=deg)
+    if progress:
+        cv2.imshow('PRESS TO CONTINUE', _)
+        cv2.waitKey(0)
+    surfacePosition = np.array([img.shape[1] - i for i in surface])
+    ret = flatten(img, surfacePosition)
+    ret = denoise(ret, n=n, kernel_size=kernel_size)
+    ret = cropImg(ret, crop[0], crop[1], crop[2], crop[3])
+    cv2.imwrite(img_save_path, ret)
+    feature = TestModel(model, model_dict_path, strict=strict) \
+        .getFeatureVector(transform(np.resize(ret, (224, 224))).view(1, 1, 224, 224))
+    np.savetxt(res_save_path, feature.reshape(1, -1), fmt='%f', delimiter=',')
+
+
+def getAllFeatureVector(rootPath: str,
+                        model,
+                        modelLocation: str,
+                        transform,
+                        txtRootPath: str = ''):
+    """
+    將制定目錄下的各類圖片轉換成向量的形式，以便操作。
+    特徵提取是由CNN完成
+    Parameters
+    ----------
+        rootPath: Sting
+            图片根目录。
+            如果你的其中一张图片路径是../sources/dataset/apple/apple1.jpg，那么rootPath = '../sources/dataset/'
+
+        model:
+            网络模型。
+            需要继承nn.Moudel
+
+        modelLocation: String
+            预训练后的模型参数文件地址。
+
+        transform:
+            需要对输入的图片做的预处理
+            比如torchvision.transforms.ToTensor()是将图片转换成tensor格式
+
+        txtRootPath:String
+            图片向量保存的根目录。
+
+    Examples
+    -------
+        model = ResNet50Regression(1)
+        modelLocation = 'model/net_22.pth'
+        rootPath = '../sources/dataset/'
+        transform = torchvision.transforms.ToTensor()
+        getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
+
+    """
+    import numpy as np
+    import os
+    import cv2
+    temp = []
+    names = os.listdir(rootPath)
+    print('wait a minute...')
+    try:
+        for name in names:
+            imgNames = os.listdir(rootPath + name + '/')
+            for imgName in imgNames:
+                img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
+                k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
+                    .getFeatureVector(transform(img).view(1, 1, 224, 224))
+                temp.append(k)
+            temp = np.array(temp)
+            np.savetxt(txtRootPath + name + '.txt', temp, '%f', delimiter=',')
+            print(name + '.txt ' + 'saved successfully! The number of records is {}'.format(temp.shape[0]))
+            temp = []
+    except:
+        print('Save failed')
+
+
+def make_labels(root_path: str, save_path: str, label_location: str):
+    """
+    为图片特征向量最后一列中加上对应标签
+    Parameters
+    ----------
+    root_path: String
+        图片向量文件存放的根路径
+        root_path/feature.txt
+
+    save_path: String
+        加上标签后文件存放的位置
+
+    label_location: String
+        label文件的路径
+
+    Notes
+    -----
+    label是以json格式保存在可读文件中, 键名是图片向量的文件名， 值为标签
+    比如apple这个类的图片向量被保存到apple.txt中，并且它对应的标签为1，
+    label中就是 {"apple": 1}
+
+    """
+    import os
+    import json
+    import numpy as np
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    with open(label_location, 'r') as f:
+        s1 = json.load(f)
+        for key, label in s1.items():
+            path_key = root_path + key + '.txt'
+            if os.path.exists(path_key):
+                with open(path_key, 'r') as f1:
+                    content = f1.readlines()
+                    for i in range(len(content)):
+                        content[i] = content[i].strip().split(',')
+                    content = np.array(content).astype(np.float64)
+                    content = np.insert(content, content.shape[1], s1[key], axis=1)
+                    np.savetxt(save_path + key + '-done.txt', content, '%f', delimiter=',')
+
+
+class MarkLabel:
+    """
+    OCT图像分层标记
+    """
+
+    def __init__(self, win_name: str):
+        import cv2
+        cv2.namedWindow(win_name, 0)
+        self.win_name = win_name
+        print('标记完后按下Enter保存，退出按ESC键\n')
+
+    def on_mouse_pick_points(self, event, x, y, flags, param):
+        """
+        鼠标事件回调函数
+        """
+        if flags == cv2.EVENT_FLAG_LBUTTON:
+            cv2.drawMarker(param, (x, y), 255, markerSize=1)
+
+    def markLabel(self, img, save_path: str = None):
+        """
+        分层标记点
+        Parameters
+        Examples
+        --------
+        MarkLabel('show').markLabel(image, 'test/img/262label.jpg')
+        """
+        cv2.setMouseCallback(self.win_name, self.on_mouse_pick_points, img)
+        while True:
+            cv2.imshow(self.win_name, img)
+            key = cv2.waitKey(30)
+            if key == 27:  # ESC
+                break
+            elif key == 13:  # enter
+                if save_path is None:
+                    print('没有给定文件路径!\n')
+                    continue
+                cv2.imwrite(save_path, img)
+                print('保存成功\n')
+        cv2.destroyAllWindows()
