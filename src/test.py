@@ -1,10 +1,8 @@
-import cv2
-import torchvision
-
-from net.CnnRegression import ResNet50Regression
-from src.utils.utils import loadModel, TestModel, standardization, denoise
-
 if __name__ == '__main__':
+
+
+    pass
+    # 机器学习模型训练过程
     # regr = Regression()
     #
     # X, y = get_data('./res/vector/vector.txt')
@@ -15,47 +13,49 @@ if __name__ == '__main__':
     # saveModel('model/ml_model/rf.pkl', model)
     # print(r2_score(y, y_pre).__str__() + '   ' + score.__str__())
 
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Resize(size=(224, 224)),
-    ])
-    img_9 = cv2.imread('../sources/dataset/test/9-3.jpg', 0)
-    ret9 = standardization(img_9)
-    img_9 = denoise(ret9, 30, 3, 15)
+    # 使用机器学习模型验证
+    # transform = torchvision.transforms.Compose([
+    #     torchvision.transforms.ToTensor(),
+    #     torchvision.transforms.Resize(size=(224, 224)),
+    # ])
+    # img_9 = cv2.imread('../sources/dataset/test/9-3.jpg', 0)
+    # ret9 = standardization(img_9)
+    # img_9 = denoise(ret9, 30, 3, 15)
+    #
+    # img_0 = cv2.imread('../sources/dataset/test/0-1.jpg', 0)
+    # ret0 = standardization(img_0)
+    # img_0 = denoise(ret0, 30, 3, 15)
+    #
+    # img_3 = cv2.imread('../sources/dataset/test/3-2.jpg', 0)
+    # ret3 = standardization(img_3)
+    # img_3 = denoise(ret3, 30, 3, 15)
+    #
+    # img_6 = cv2.imread('../sources/dataset/test/6-2.jpg', 0)
+    # ret6 = standardization(img_6)
+    # img_6 = denoise(ret6, 30, 3, 15)
+    #
+    # img_12 = cv2.imread('../sources/dataset/test/12-3.jpg', 0)
+    # ret12 = standardization(img_12)
+    # img_12 = denoise(ret12, 30, 3, 15)
+    #
+    # feature_0 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    #     .getFeatureVector(transform(img_0).view(1, 1, 224, 224))
+    # feature_3 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    #     .getFeatureVector(transform(img_3).view(1, 1, 224, 224))
+    # feature_6 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    #     .getFeatureVector(transform(img_6).view(1, 1, 224, 224))
+    # feature_9 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    #     .getFeatureVector(transform(img_9).view(1, 1, 224, 224))
+    # feature_12 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    #     .getFeatureVector(transform(img_12).view(1, 1, 224, 224))
+    # dt_pre = loadModel('model/ml_model/dt.pkl').predict(feature_9.reshape(1, -1))
+    # knn_pre = loadModel('model/ml_model/knn.pkl').predict(feature_9.reshape(1, -1))
+    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(feature_9.reshape(1, -1))
+    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(feature_9.reshape(1, -1))
+    # print('Decison Tree回归预测的时间是 {}\nKnn回归预测的时间是 {}\nRandom Forest回归预测的时间是 {}\nSvm回归预测的时间是 {}'.format(dt_pre, knn_pre,
+    #                                                                                                  rf_pre, svm_pre))
 
-    img_0 = cv2.imread('../sources/dataset/test/0-1.jpg', 0)
-    ret0 = standardization(img_0)
-    img_0 = denoise(ret0, 30, 3, 15)
-
-    img_3 = cv2.imread('../sources/dataset/test/3-2.jpg', 0)
-    ret3 = standardization(img_3)
-    img_3 = denoise(ret3, 30, 3, 15)
-
-    img_6 = cv2.imread('../sources/dataset/test/6-2.jpg', 0)
-    ret6 = standardization(img_6)
-    img_6 = denoise(ret6, 30, 3, 15)
-
-    img_12 = cv2.imread('../sources/dataset/test/12-3.jpg', 0)
-    ret12 = standardization(img_12)
-    img_12 = denoise(ret12, 30, 3, 15)
-
-    feature_0 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
-        .getFeatureVector(transform(img_0).view(1, 1, 224, 224))
-    feature_3 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
-        .getFeatureVector(transform(img_3).view(1, 1, 224, 224))
-    feature_6 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
-        .getFeatureVector(transform(img_6).view(1, 1, 224, 224))
-    feature_9 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
-        .getFeatureVector(transform(img_9).view(1, 1, 224, 224))
-    feature_12 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
-        .getFeatureVector(transform(img_12).view(1, 1, 224, 224))
-    dt_pre = loadModel('model/ml_model/dt.pkl').predict(feature_9.reshape(1, -1))
-    knn_pre = loadModel('model/ml_model/knn.pkl').predict(feature_9.reshape(1, -1))
-    rf_pre = loadModel('model/ml_model/rf.pkl').predict(feature_9.reshape(1, -1))
-    svm_pre = loadModel('model/ml_model/svm.pkl').predict(feature_9.reshape(1, -1))
-    print('Decison Tree回归预测的时间是 {}\nKnn回归预测的时间是 {}\nRandom Forest回归预测的时间是 {}\nSvm回归预测的时间是 {}'.format(dt_pre, knn_pre,
-                                                                                                     rf_pre, svm_pre))
-
+    # 图像预处理
     # import cv2
     # import numpy as np
     #

@@ -9,14 +9,16 @@ from net.resnet50 import ResNet50, ResidualBlock
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimizer, trainLog, testLog, valLog,
+def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimizer, scheduler, trainLog, testLog, valLog,
                savePath=None):
     for k in range(epoch):
         print('\nEpoch: %d' % (k + 1))
         net.train()
         sum_loss = 0.0
+        total = 0
         for i, trainData in enumerate(trainLoader):
             length = len(trainLoader)
+            total = length
             inputs, labels = trainData
             inputs, labels = inputs.to(device), labels.to(device)
             outputs = net(inputs)
@@ -25,10 +27,14 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
             loss.backward()
             optimizer.step()
             sum_loss += loss.item()
-            print('[tra epoch:%d, iter:%d] |Loss: %.03f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
-            trainLog.write('%03d  %05d |Loss: %.03f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
+            print('[tra epoch:%d, iter:%d] |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
+            trainLog.write('%03d  %05d |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
             trainLog.write('\n')
             trainLog.flush()
+        print('[tra epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
+        trainLog.write('[tra epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
+        trainLog.write('\n\n')
+        trainLog.flush()
         if savePath is not None:
             print('Saving model......')
             torch.save(net.state_dict(), savePath + 'net_{}.pth'.format(k + 1))
@@ -42,8 +48,8 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
                 outputs = net(inputs)
                 loss = lossFun(outputs, labels)
                 sum_loss += loss.item()
-                print('[val epoch:%d, iter:%d] |Loss: %.03f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
-                valLog.write('%03d  %05d |Loss: %.03f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
+                print('[val epoch:%d, iter:%d] |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
+                valLog.write('%03d  %05d |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
                 valLog.write('\n')
                 valLog.flush()
         scheduler.step(sum_loss)
@@ -57,12 +63,14 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
             loss = lossFun(outputs, labels)
             sum_loss += loss.item()
             print('Loss: %.03f' % (sum_loss / (i + 1)))
+            testLog.write('learning rate: {}'.format(scheduler.optimizer.defaults['lr']))
+            testLog.write('\n')
             testLog.write('Loss: %.03f' % (sum_loss / (i + 1)))
             testLog.write('\n')
             testLog.flush()
 
 
-EPOCH = 21
+EPOCH = 30
 BATCH_SIZE = 3
 LR = 0.01
 imgPath = '../sources/dataset/dataset/'
@@ -92,4 +100,4 @@ if __name__ == "__main__":
         with open("./res/log.txt", "w") as f2:
             with open("./res/val.txt", 'w') as f3:
                 startTrain(net, trainLoader, testLoader, valLoader,
-                           EPOCH, loss, optimizer, f2, f, f3, savePath=modelPath)
+                           EPOCH, loss, optimizer, scheduler, f2, f, f3, savePath=modelPath)
