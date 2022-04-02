@@ -6,13 +6,13 @@
 /.idea/dlproject-master.iml
 /src/history/label.txt
 /src/res/label.txt
-/src/res/log.txt
+/src/res/preTrainRes/log.txt
 /.idea/misc.xml
 /.idea/modules.xml
 /src/history/model/net_107.pth
 /.idea/inspectionProfiles/profiles_settings.xml
-/src/res/test.txt
-/src/res/val.txt
+/src/res/preTrainRes/test.txt
+/src/res/preTrainRes/val.txt
 /.idea/vcs.xml
 /src/res/features/3-1.txt
 /src/res/features/6-1.txt

@@ -1,16 +1,45 @@
+from sklearn.metrics import r2_score, explained_variance_score, median_absolute_error, mean_squared_error, \
+    mean_absolute_error
+
+from src.utils.utils import loadModel, get_data
+from sklearn.metrics import r2_score, explained_variance_score, median_absolute_error, mean_squared_error, \
+    mean_absolute_error
+
+from src.utils.utils import loadModel, get_data
+
 if __name__ == '__main__':
+    # 去噪
+    # rootPath = '../sources/dataset/'
+    # # imgPathNames = os.listdir(rootPath)
+    # imgPathNames = ['3_test']
+    # for imgPathName in imgPathNames:
+    #     imgNames = os.listdir(rootPath + imgPathName + '/')
+    #     for imgName in imgNames:
+    #         imgPath = rootPath + imgPathName + '/' + imgName
+    #         img = cv2.imread(imgPath, 0)
+    #         img = standardization(img)
+    #         img = denoise(img, 15, 5)
+    #         cv2.imwrite(imgPath, img)
+    #         print(imgName, ' done')
 
+    # 获取向量
+    # model = ResNet50Regression(1)
+    # modelLocation = './model/cnn_model/net_27.pth'
+    # rootPath = '../sources/dataset/dataset/'
+    # transform = torchvision.transforms.ToTensor()
+    # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
+    # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
 
-    pass
     # 机器学习模型训练过程
     # regr = Regression()
     #
     # X, y = get_data('./res/vector/vector.txt')
-    # model, parm, score = regr.rfRegression(X, y, 1, 200, 1, 30, 1, 20, cv_num=10, n_iter=10)
+    # # model, parm, score = regr.rfRegression(X, y, 1, 200, 1, 30, 1, 20, cv_num=10, n_iter=4)
+    # model, parm, score = regr.svmRegression(X, y, [0.01, 0.1, 1.0, 10], [0.01, 0.1, 1.0, 10], [0.01, 0.1, 1.0, 10], 10, 4)
     # # 直接使用predict()函数进行预测
     # y_pre = model.predict(X)
     # # 使用utils.py中的saveModel()函数将模型保存到本地
-    # saveModel('model/ml_model/rf.pkl', model)
+    # saveModel('model/ml_model/svm.pkl', model)
     # print(r2_score(y, y_pre).__str__() + '   ' + score.__str__())
 
     # 使用机器学习模型验证
@@ -20,40 +49,37 @@ if __name__ == '__main__':
     # ])
     # img_9 = cv2.imread('../sources/dataset/test/9-3.jpg', 0)
     # ret9 = standardization(img_9)
-    # img_9 = denoise(ret9, 30, 3, 15)
+    # img_9 = denoise(ret9, 15, 3, 30)
     #
     # img_0 = cv2.imread('../sources/dataset/test/0-1.jpg', 0)
     # ret0 = standardization(img_0)
-    # img_0 = denoise(ret0, 30, 3, 15)
+    # img_0 = denoise(ret0, 15, 3, 30)
     #
     # img_3 = cv2.imread('../sources/dataset/test/3-2.jpg', 0)
     # ret3 = standardization(img_3)
-    # img_3 = denoise(ret3, 30, 3, 15)
+    # img_3 = denoise(ret3, 15, 3, 30)
     #
     # img_6 = cv2.imread('../sources/dataset/test/6-2.jpg', 0)
     # ret6 = standardization(img_6)
-    # img_6 = denoise(ret6, 30, 3, 15)
+    # img_6 = denoise(ret6, 15, 3, 30)
     #
     # img_12 = cv2.imread('../sources/dataset/test/12-3.jpg', 0)
     # ret12 = standardization(img_12)
-    # img_12 = denoise(ret12, 30, 3, 15)
+    # img_12 = denoise(ret12, 15, 3, 30)
     #
-    # feature_0 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    # feature_0 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
     #     .getFeatureVector(transform(img_0).view(1, 1, 224, 224))
-    # feature_3 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    # feature_3 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
     #     .getFeatureVector(transform(img_3).view(1, 1, 224, 224))
-    # feature_6 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    # feature_6 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
     #     .getFeatureVector(transform(img_6).view(1, 1, 224, 224))
-    # feature_9 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    # feature_9 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
     #     .getFeatureVector(transform(img_9).view(1, 1, 224, 224))
-    # feature_12 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_21.pth', strict=False) \
+    # feature_12 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
     #     .getFeatureVector(transform(img_12).view(1, 1, 224, 224))
-    # dt_pre = loadModel('model/ml_model/dt.pkl').predict(feature_9.reshape(1, -1))
-    # knn_pre = loadModel('model/ml_model/knn.pkl').predict(feature_9.reshape(1, -1))
-    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(feature_9.reshape(1, -1))
-    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(feature_9.reshape(1, -1))
-    # print('Decison Tree回归预测的时间是 {}\nKnn回归预测的时间是 {}\nRandom Forest回归预测的时间是 {}\nSvm回归预测的时间是 {}'.format(dt_pre, knn_pre,
-    #                                                                                                  rf_pre, svm_pre))
+    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(feature_12.reshape(1, -1))
+    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(feature_12.reshape(1, -1))
+    # print('Random Forest回归预测的时间是 {}\nSvm回归预测的时间是 {}'.format(rf_pre, svm_pre))
 
     # 图像预处理
     # import cv2
@@ -140,3 +166,23 @@ if __name__ == '__main__':
     # cv2.imwrite('original_location.jpg', merge1)
     # cv2.imwrite('fitted_location.jpg', merge2)
     # cv2.imwrite('flattened_img.jpg', merge3)
+
+    # 对文件夹内的图像进行评测
+    # rootPath = '../sources/dataset/test/'
+    # model = ResNet50Regression(1)
+    # modelLocation = './model/cnn_model/net_27.pth'
+    # transform = torchvision.transforms.ToTensor()
+    # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
+    # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
+
+    X, y = get_data('./res/vector.txt')
+    rf_pre = loadModel('model/ml_model/rf.pkl').predict(X)
+    svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
+    print(
+        'Random Forest对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
+            r2_score(y, rf_pre), mean_squared_error(y, rf_pre), mean_absolute_error(y, rf_pre),
+            explained_variance_score(y, rf_pre), median_absolute_error(y, rf_pre)))
+    print(
+        'SVM对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
+            r2_score(y, svm_pre), mean_squared_error(y, svm_pre), mean_absolute_error(y, svm_pre),
+            explained_variance_score(y, svm_pre), median_absolute_error(y, svm_pre)))

@@ -1936,20 +1936,23 @@ def getAllFeatureVector(rootPath: str,
     temp = []
     names = os.listdir(rootPath)
     print('wait a minute...')
-    try:
-        for name in names:
-            imgNames = os.listdir(rootPath + name + '/')
-            for imgName in imgNames:
-                img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
-                k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
-                    .getFeatureVector(transform(img).view(1, 1, 224, 224))
-                temp.append(k)
-            temp = np.array(temp)
-            np.savetxt(txtRootPath + name + '.txt', temp, '%f', delimiter=',')
-            print(name + '.txt ' + 'saved successfully! The number of records is {}'.format(temp.shape[0]))
-            temp = []
-    except:
-        print('Save failed')
+    # try:
+    for name in names:
+        if os.path.isfile(rootPath + name):
+            continue
+        imgNames = os.listdir(rootPath + name + '/')
+        for imgName in imgNames:
+            img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
+            img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_CUBIC)
+            k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
+                .getFeatureVector(transform(img).view(1, 1, 224, 224))
+            temp.append(k)
+        temp = np.array(temp)
+        np.savetxt(txtRootPath + name + '.txt', temp, '%f', delimiter=',')
+        print(name + '.txt ' + 'saved successfully! The number of records is {}'.format(temp.shape[0]))
+        temp = []
+    # except Exception as e:
+    #     print('Save failed\n' + e.__str__())
 
 
 def make_labels(root_path: str, save_path: str, label_location: str):
