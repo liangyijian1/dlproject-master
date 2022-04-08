@@ -1,26 +1,95 @@
-from sklearn.metrics import r2_score, explained_variance_score, median_absolute_error, mean_squared_error, \
-    mean_absolute_error
+import cv2
+import numpy as np
 
-from src.utils.utils import loadModel, get_data
-from sklearn.metrics import r2_score, explained_variance_score, median_absolute_error, mean_squared_error, \
-    mean_absolute_error
+from src.utils.utils import cropImg
 
-from src.utils.utils import loadModel, get_data
+
+def extract_ROI(img, margin, diff):
+    """
+    使用滑动窗口来提取ROI区域
+    Parameters
+    ----------
+    diff
+    margin
+    img
+
+    Returns
+    -------
+
+    """
+    weight = img.shape[0]
+    startCol = 0
+    endCol = int(weight / 2)
+    buffer = 0
+    # 将窗口内所有灰度值进行第一次累加
+    for j in range(startCol, endCol):
+        temp = img[:, j]
+        buffer += np.sum(temp)
+    maxValue = buffer
+    winStart = startCol
+    winEnd = endCol
+    while endCol != weight - 1:
+        if endCol >= weight:
+            break
+        # 滑动窗口前进
+        endCol += 1
+        temp = img[:, endCol]
+        buffer += np.sum(temp)
+        temp = img[:, startCol]
+        buffer -= np.sum(temp)
+        startCol += 1
+        if buffer > maxValue:
+            maxValue = buffer
+            winStart = startCol
+            winEnd = endCol
+    # Todo 尺寸不太对，修改一下
+    ret = cropImg(img[:, winStart:winEnd], margin + diff, margin - diff, 0, 0)
+    return ret
+
 
 if __name__ == '__main__':
-    # 去噪
+    img = cv2.imread('../sources/dataset/dataset/6/10-204.jpg', 0)
+    margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+    ret = extract_ROI(img, margin, -50)
+    cv2.imshow('1', ret)
+    cv2.waitKey(0)
+
+    # # 去噪
     # rootPath = '../sources/dataset/'
     # # imgPathNames = os.listdir(rootPath)
-    # imgPathNames = ['3_test']
+    # imgPathNames = ['temp']
     # for imgPathName in imgPathNames:
     #     imgNames = os.listdir(rootPath + imgPathName + '/')
-    #     for imgName in imgNames:
-    #         imgPath = rootPath + imgPathName + '/' + imgName
-    #         img = cv2.imread(imgPath, 0)
-    #         img = standardization(img)
-    #         img = denoise(img, 15, 5)
-    #         cv2.imwrite(imgPath, img)
-    #         print(imgName, ' done')
+    #     # imgNames = ['5-129.jpg']
+    #     if not os.path.exists(rootPath + imgPathName + '/done/'):
+    #         os.mkdir(rootPath + imgPathName + '/done/')
+    #     for idx, imgName in enumerate(imgNames):
+    #         try:
+    #             if imgName[-3:] == 'jpg':
+    #                 imgPath = rootPath + imgPathName + '/' + imgName
+    #                 img = cv2.imread(imgPath, 0)
+    #                 img = standardization(img)
+    #                 y, _ = surfaceFitting(img, deg=2, mbSize=15)
+    #                 afterDenoise = denoise(img, 3)
+    #                 flattened_img = flatten(afterDenoise, [512 - i for i in y])
+    #                 # flattened_img = cropImg(flattened_img, 20, 20, 40, 0)
+    #                 cv2.imwrite(rootPath + imgPathName + '/done/' + imgName, flattened_img)
+    #                 print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
+    #         except Exception as e:
+    #             with open('./failed', 'a+') as f:
+    #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
+    #             print(imgName + "处理时候发生错误，： " + e.__str__())
+    #             traceback.print_exc(file=sys.stdout)
+    # # 展平
+    # y, _ = ut.surfaceFitting(ret0, deg=2, mbSize=15)
+    # fitted_location_img0 = np.copy(img_0)
+    # original_location_img0 = np.copy(img_0)
+    # for i in range(fitted_location_img0.shape[1]):
+    #     fitted_location_img0[y0[i]][i] = 255
+    # for i in range(len(_0)):
+    #     k = _0[i]
+    #     original_location_img0[k[0]][k[1] - 1] = 255
+    # flattened_img0 = ut.flatten(img_0, [512 - i for i in y0])
 
     # 获取向量
     # model = ResNet50Regression(1)
@@ -175,14 +244,15 @@ if __name__ == '__main__':
     # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
     # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
 
-    X, y = get_data('./res/vector.txt')
-    rf_pre = loadModel('model/ml_model/rf.pkl').predict(X)
-    svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
-    print(
-        'Random Forest对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
-            r2_score(y, rf_pre), mean_squared_error(y, rf_pre), mean_absolute_error(y, rf_pre),
-            explained_variance_score(y, rf_pre), median_absolute_error(y, rf_pre)))
-    print(
-        'SVM对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
-            r2_score(y, svm_pre), mean_squared_error(y, svm_pre), mean_absolute_error(y, svm_pre),
-            explained_variance_score(y, svm_pre), median_absolute_error(y, svm_pre)))
+    # # 集合的测试
+    # X, y = get_data('./res/vector.txt')
+    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(X)
+    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
+    # print(
+    #     'Random Forest对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
+    #         r2_score(y, rf_pre), mean_squared_error(y, rf_pre), mean_absolute_error(y, rf_pre),
+    #         explained_variance_score(y, rf_pre), median_absolute_error(y, rf_pre)))
+    # print(
+    #     'SVM对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
+    #         r2_score(y, svm_pre), mean_squared_error(y, svm_pre), mean_absolute_error(y, svm_pre),
+    #         explained_variance_score(y, svm_pre), median_absolute_error(y, svm_pre)))

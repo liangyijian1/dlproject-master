@@ -1,6 +1,5 @@
 import torch
 
-
 from torch.utils.data import DataLoader
 
 
@@ -1315,7 +1314,7 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
     afterDenoise = None
     if denoiseScheme == 'default':
         # 不需要对镜面反射做处理
-        afterDenoise = denoise(img=file, n=10, mbSize=mbKSize, q=35)
+        afterDenoise = denoise(img=file, n=15, mbSize=mbKSize, q=35)
     elif denoiseScheme == 'mediaBlur':
         # 中值滤波下需要对镜面反射做处理
         colNum = file.shape[1]
@@ -1330,13 +1329,15 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
         exit(1)
     temp = np.copy(afterDenoise)
     ret, threshold = cv2.threshold(temp, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    # stats对应的是x,y,width,height和面积， centroids为中心点， labels表示各个连通区在图上的表示
     num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
+    # 选出背景的序号
     labelNum = 0
     for i in range(stats.shape[0]):
         if stats[i, 0] == 0 and stats[i, 1] == 0:
             labelNum = i
-    stats = np.delete(stats, [0, 1], axis=0)
-    num_labels = num_labels - 2
+    stats = np.delete(stats, [0], axis=0)
+    num_labels = num_labels - 1
     # 将label列表中labelNum组全部置为0背景
     for i in range(labels.shape[0]):
         for j in range(labels.shape[1]):
@@ -1358,7 +1359,7 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
     maxIdx = np.argmax(count_list) + 1
     mask = labels == maxIdx
     output[:, :][mask] = 255
-    return output, afterDenoise
+    return output
 
 
 def binaryMask(mask_file):
@@ -1395,7 +1396,7 @@ def bow(descriptor_list, k, label):
     return ret
 
 
-def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, denoiseScheme: str = 'default'):
+def surfaceFitting(img, deg=3, mbSize: int = 5, model: object = None, denoiseScheme: str = 'default'):
     """
     通过连通区域来进行表面拟合
     Parameters
@@ -1426,7 +1427,7 @@ def surfaceFitting(img, deg: int = 3, mbSize: int = 5, model: object = None, den
     import cv2
 
     # 找出最大连通区域
-    region, _ = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
+    region = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
     region = cv2.erode(region, kernel=(3, 3), iterations=3)
     # 从下往上找出每一列中第一个大于0的值， 存入到location数组中
     col = region.shape[1]
