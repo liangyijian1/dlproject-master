@@ -1,58 +1,44 @@
 import cv2
-import numpy as np
 
-from src.utils.utils import cropImg
-
-
-def extract_ROI(img, margin, diff):
-    """
-    使用滑动窗口来提取ROI区域
-    Parameters
-    ----------
-    diff
-    margin
-    img
-
-    Returns
-    -------
-
-    """
-    weight = img.shape[0]
-    startCol = 0
-    endCol = int(weight / 2)
-    buffer = 0
-    # 将窗口内所有灰度值进行第一次累加
-    for j in range(startCol, endCol):
-        temp = img[:, j]
-        buffer += np.sum(temp)
-    maxValue = buffer
-    winStart = startCol
-    winEnd = endCol
-    while endCol != weight - 1:
-        if endCol >= weight:
-            break
-        # 滑动窗口前进
-        endCol += 1
-        temp = img[:, endCol]
-        buffer += np.sum(temp)
-        temp = img[:, startCol]
-        buffer -= np.sum(temp)
-        startCol += 1
-        if buffer > maxValue:
-            maxValue = buffer
-            winStart = startCol
-            winEnd = endCol
-    # Todo 尺寸不太对，修改一下
-    ret = cropImg(img[:, winStart:winEnd], margin + diff, margin - diff, 0, 0)
-    return ret
-
+from src.utils.utils import extract_ROI
 
 if __name__ == '__main__':
-    img = cv2.imread('../sources/dataset/dataset/6/10-204.jpg', 0)
+    img = cv2.imread('1-211.jpg', 0)
     margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    ret = extract_ROI(img, margin, -50)
-    cv2.imshow('1', ret)
-    cv2.waitKey(0)
+    ret = extract_ROI(img, margin, diff=-50, winStep=30, k=4)
+    k = 3
+    for item in ret:
+        name = k.__str__() + '.jpg'
+        cv2.imwrite(name, item)
+        k += 1
+
+    # # 手动标注表面展平
+    # rootPath = '../sources/dataset/'
+    # # imgPathNames = os.listdir(rootPath)
+    # imgPathNames = ['temp']
+    # for imgPathName in imgPathNames:
+    #     imgNames = os.listdir(rootPath + imgPathName + '/')
+    #     # imgNames = ['5-129.jpg']
+    #     if not os.path.exists(rootPath + imgPathName + '/done/'):
+    #         os.mkdir(rootPath + imgPathName + '/done/')
+    #     for idx, imgName in enumerate(imgNames):
+    #         try:
+    #             if imgName[-3:] == 'jpg':
+    #                 imgPath = rootPath + imgPathName + '/' + imgName
+    #                 img = cv2.imread(imgPath, 0)
+    #                 # img = standardization(img)
+    #                 loc = MarkLabel('show').markLabel(img, 'temp.jpg')
+    #                 y, _ = surfaceFitting(img, manualLoc=loc, deg=3)
+    #                 # afterDenoise = denoise(img, 3)
+    #                 flattened_img = flatten(img, y)
+    #                 # flattened_img = cropImg(flattened_img, 20, 20, 40, 0)
+    #                 cv2.imwrite(rootPath + imgPathName + '/done/' + imgName, flattened_img)
+    #                 print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
+    #         except Exception as e:
+    #             with open('./failed', 'a+') as f:
+    #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
+    #             print(imgName + "处理时候发生错误，： " + e.__str__())
+    #             traceback.print_exc(file=sys.stdout)
 
     # # 去噪
     # rootPath = '../sources/dataset/'
@@ -80,6 +66,7 @@ if __name__ == '__main__':
     #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
     #             print(imgName + "处理时候发生错误，： " + e.__str__())
     #             traceback.print_exc(file=sys.stdout)
+
     # # 展平
     # y, _ = ut.surfaceFitting(ret0, deg=2, mbSize=15)
     # fitted_location_img0 = np.copy(img_0)

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from torch.utils.data import DataLoader
@@ -1336,6 +1337,7 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
     for i in range(stats.shape[0]):
         if stats[i, 0] == 0 and stats[i, 1] == 0:
             labelNum = i
+            break
     stats = np.delete(stats, [0], axis=0)
     num_labels = num_labels - 1
     # 将label列表中labelNum组全部置为0背景
@@ -1396,7 +1398,8 @@ def bow(descriptor_list, k, label):
     return ret
 
 
-def surfaceFitting(img, deg=3, mbSize: int = 5, model: object = None, denoiseScheme: str = 'default'):
+def surfaceFitting(img, deg: int = 2, mbSize: int = 15, model: object = None, denoiseScheme: str = 'default',
+                   manualLoc: list = None):
     """
     通过连通区域来进行表面拟合
     Parameters
@@ -1410,6 +1413,7 @@ def surfaceFitting(img, deg=3, mbSize: int = 5, model: object = None, denoiseSch
         中值滤波核的大小，用来平滑图像
     model : object
         预训练的回归模型，默认为None
+    manualLoc
 
     Returns
     -------
@@ -1426,21 +1430,24 @@ def surfaceFitting(img, deg=3, mbSize: int = 5, model: object = None, denoiseSch
     import numpy as np
     import cv2
 
-    # 找出最大连通区域
-    region = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
-    region = cv2.erode(region, kernel=(3, 3), iterations=3)
-    # 从下往上找出每一列中第一个大于0的值， 存入到location数组中
-    col = region.shape[1]
-    row = region.shape[0]
     location = []
-    for i in range(col):
-        temp = region[:, i]
-        j = row - 1
-        while j > 0:
-            if temp[j] > 0:
-                location.append((j, i + 1))
-                break
-            j -= 1
+    if manualLoc is None:
+        # 找出最大连通区域
+        region = find_max_region(img, mbSize, denoiseScheme=denoiseScheme)
+        region = cv2.erode(region, kernel=(3, 3), iterations=5)
+        # 从下往上找出每一列中第一个大于0的值， 存入到location数组中
+        col = region.shape[1]
+        row = region.shape[0]
+        for i in range(col):
+            temp = region[:, i]
+            j = row - 1
+            while j > 0:
+                if temp[j] > 0:
+                    location.append((j, i + 1))
+                    break
+                j -= 1
+    else:
+        location = manualLoc
     # 将location数组中的值当做目标值，将x横坐标当做自变量，进行拟
     location = np.array(location)
     X = location[:, 1]
@@ -1453,8 +1460,8 @@ def surfaceFitting(img, deg=3, mbSize: int = 5, model: object = None, denoiseSch
         p1 = np.poly1d(z1)
         surfacePosition = np.array(p1(X_test), dtype=np.int32)
     for idx, item in enumerate(surfacePosition):
-        if item > row:
-            surfacePosition[idx] = row - 1
+        if item > img.shape[0]:
+            surfacePosition[idx] = img.shape[0] - 1
     return surfacePosition, location
 
 
@@ -1465,7 +1472,8 @@ def flatten(img, surfacePosition):
     ----------
     img : 数据类型为numpy.narray
         图片数据
-    surfacePosition ：数据类型为numpy.array
+
+    surfacePosition ：numpy.array
         表面位置索引数组，由列向量索引组成，长度等于图片的列向量数量
         例如np.array([224, 212, 264, 203 ....，123])
 
@@ -2006,14 +2014,17 @@ class MarkLabel:
         import cv2
         cv2.namedWindow(win_name, 0)
         self.win_name = win_name
+        self.surfaceLoc = []
         print('标记完后按下Enter保存，退出按ESC键\n')
 
     def on_mouse_pick_points(self, event, x, y, flags, param):
         """
         鼠标事件回调函数
         """
+        import cv2
         if flags == cv2.EVENT_FLAG_LBUTTON:
             cv2.drawMarker(param, (x, y), 255, markerSize=1)
+            self.surfaceLoc.append((512 - y, x))
 
     def markLabel(self, img, save_path: str = None):
         """
@@ -2023,9 +2034,11 @@ class MarkLabel:
         --------
         MarkLabel('show').markLabel(image, 'test/img/262label.jpg')
         """
-        cv2.setMouseCallback(self.win_name, self.on_mouse_pick_points, img)
+        import cv2
+        ret = np.copy(img)
+        cv2.setMouseCallback(self.win_name, self.on_mouse_pick_points, ret)
         while True:
-            cv2.imshow(self.win_name, img)
+            cv2.imshow(self.win_name, ret)
             key = cv2.waitKey(30)
             if key == 27:  # ESC
                 break
@@ -2033,6 +2046,74 @@ class MarkLabel:
                 if save_path is None:
                     print('没有给定文件路径!\n')
                     continue
-                cv2.imwrite(save_path, img)
+                cv2.imwrite(save_path, ret)
                 print('保存成功\n')
         cv2.destroyAllWindows()
+        return list(set(self.surfaceLoc))
+
+
+def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
+    """
+    使用滑动窗口来提取ROI区域
+    Parameters
+    ----------
+    img : narray
+        图片数据
+    winStep : int
+        窗口滑动步长
+    k : int
+        需要保留几个窗口
+    diff : int
+        窗口上下裁剪
+    margin
+    Returns
+    -------
+
+    """
+    import numpy as np
+    import cv2
+    weight = img.shape[0]
+    startCol = 0
+    endCol = int(weight / 2)
+    maxStatue = np.array([0] * 3)
+    while endCol != weight - 1:
+        if endCol >= weight - winStep + 1:
+            break
+        # 滑动窗口前进
+        ret, threshold = cv2.threshold(img[:, startCol:endCol], 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        # stats对应的是x,y,width,height和面积， centroids为中心点， labels表示各个连通区在图上的表示
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
+        stats = np.delete(stats, [0], axis=0)
+        num_labels -= 1
+        maxIdx = np.argmax(stats[:, -1])
+        croped = cropImg(labels[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
+        rectangleTopBorder = rectangleLeftBorder = rectangleButtonBorder = rectangleRightBorder = - 1
+        for i in range(croped.shape[0]):
+            if np.isin(maxIdx, croped[i, :]):
+                rectangleTopBorder = i
+                break
+        for i in range(croped.shape[0]):
+            if np.isin(maxIdx, croped[croped.shape[0] - 1 - i, :]):
+                rectangleButtonBorder = i
+                break
+        for i in range(croped.shape[1]):
+            if np.isin(maxIdx, croped[:, i]):
+                rectangleLeftBorder = i
+                break
+        for i in range(croped.shape[1]):
+            if np.isin(maxIdx, croped[:, croped.shape[1] - 1 - i]):
+                rectangleRightBorder = i
+                break
+        maxValue = rectangleTopBorder * rectangleLeftBorder * rectangleButtonBorder * rectangleRightBorder
+        maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, maxValue])))
+        startCol += winStep
+        endCol += winStep
+    # Todo 再加上一个评判标准，内部背景所占面积大小
+    maxStatue = np.delete(maxStatue, [0], axis=0)
+    ret = []
+    for i in range(k):
+        idx = np.argmax(maxStatue[:, -1])
+        temp = cropImg(img[:, maxStatue[idx, 0]:maxStatue[idx, 1]], margin + diff, margin - diff, 0, 0)
+        ret.append(temp)
+        maxStatue = np.delete(maxStatue, [idx], axis=0)
+    return ret
