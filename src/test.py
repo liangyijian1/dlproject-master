@@ -5,7 +5,7 @@ from src.utils.utils import extract_ROI
 if __name__ == '__main__':
     img = cv2.imread('1-211.jpg', 0)
     margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    ret = extract_ROI(img, margin, diff=-50, winStep=30, k=4)
+    ret = extract_ROI(img, margin, diff=-50, winStep=30, k=8)
     k = 3
     for item in ret:
         name = k.__str__() + '.jpg'

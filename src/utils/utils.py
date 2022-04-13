@@ -1527,7 +1527,7 @@ def denoise(img, n: int, mbSize: int = 3, q: int = 30):
     import cv2
     ret = np.copy(img)
     k = []
-    num = 0
+    num = 1
     sum = 0
     for i in range(n):
         for j in range(ret.shape[1]):
@@ -2071,7 +2071,6 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
 
     """
     import numpy as np
-    import cv2
     weight = img.shape[0]
     startCol = 0
     endCol = int(weight / 2)
@@ -2080,35 +2079,31 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
         if endCol >= weight - winStep + 1:
             break
         # 滑动窗口前进
-        ret, threshold = cv2.threshold(img[:, startCol:endCol], 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-        # stats对应的是x,y,width,height和面积， centroids为中心点， labels表示各个连通区在图上的表示
-        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(threshold, connectivity=8)
-        stats = np.delete(stats, [0], axis=0)
-        num_labels -= 1
-        maxIdx = np.argmax(stats[:, -1])
-        croped = cropImg(labels[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
+        winArea = img[:, startCol:endCol]
+        croped = cropImg(winArea[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
+        mask = find_max_region(croped, topMargin=0, bottomMargin=0)
         rectangleTopBorder = rectangleLeftBorder = rectangleButtonBorder = rectangleRightBorder = - 1
         for i in range(croped.shape[0]):
-            if np.isin(maxIdx, croped[i, :]):
+            if np.isin(255, mask[i, :]):
                 rectangleTopBorder = i
                 break
         for i in range(croped.shape[0]):
-            if np.isin(maxIdx, croped[croped.shape[0] - 1 - i, :]):
-                rectangleButtonBorder = i
+            if np.isin(255, mask[croped.shape[0] - 1 - i, :]):
+                rectangleButtonBorder = croped.shape[0] - 1 - i
                 break
         for i in range(croped.shape[1]):
-            if np.isin(maxIdx, croped[:, i]):
+            if np.isin(255, mask[:, i]):
                 rectangleLeftBorder = i
                 break
         for i in range(croped.shape[1]):
-            if np.isin(maxIdx, croped[:, croped.shape[1] - 1 - i]):
-                rectangleRightBorder = i
+            if np.isin(255, mask[:, croped.shape[1] - 1 - i]):
+                rectangleRightBorder = croped.shape[1] - 1 - i
                 break
+        # Todo 再加上一个评判标准，内部背景所占面积大小
         maxValue = rectangleTopBorder * rectangleLeftBorder * rectangleButtonBorder * rectangleRightBorder
         maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, maxValue])))
         startCol += winStep
         endCol += winStep
-    # Todo 再加上一个评判标准，内部背景所占面积大小
     maxStatue = np.delete(maxStatue, [0], axis=0)
     ret = []
     for i in range(k):
