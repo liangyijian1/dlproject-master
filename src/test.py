@@ -1,16 +1,16 @@
-import cv2
+import torchvision
 
-from src.utils.utils import extract_ROI
+from net.CnnRegression import ResNet50Regression
+from src.utils.utils import getAllFeatureVector
 
 if __name__ == '__main__':
-    img = cv2.imread('1-211.jpg', 0)
-    margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    ret = extract_ROI(img, margin, diff=-50, winStep=30, k=8)
-    k = 3
-    for item in ret:
-        name = k.__str__() + '.jpg'
-        cv2.imwrite(name, item)
-        k += 1
+    # rootPath = '../sources/test/'
+    # imgNames = os.listdir(rootPath)
+    # for imgName in imgNames:
+    #     img = cv2.imread(rootPath + imgName, 0)
+    #     margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+    #     ret = extract_ROI(img, margin, diff=-50, winStep=30, k=1)
+    #     cv2.imwrite('../sources/roi/roi-' + imgName, ret[0])
 
     # # 手动标注表面展平
     # rootPath = '../sources/dataset/'
@@ -79,11 +79,11 @@ if __name__ == '__main__':
     # flattened_img0 = ut.flatten(img_0, [512 - i for i in y0])
 
     # 获取向量
-    # model = ResNet50Regression(1)
-    # modelLocation = './model/cnn_model/net_27.pth'
-    # rootPath = '../sources/dataset/dataset/'
-    # transform = torchvision.transforms.ToTensor()
-    # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
+    model = ResNet50Regression(1)
+    modelLocation = './model/cnn_model/net_27.pth'
+    rootPath = '../sources/roi/'
+    transform = torchvision.transforms.ToTensor()
+    getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
     # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
 
     # 机器学习模型训练过程
