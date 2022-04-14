@@ -1346,21 +1346,10 @@ def find_max_region(file, mbKSize=3, denoiseScheme='default', topMargin=45, bott
             if labels[i][j] == labelNum:
                 labels[i][j] = 0
     output = np.zeros((threshold.shape[0], threshold.shape[1]), np.uint8)
-    count_list = []
+    # 将图中的连通区域组合起来
     for i in range(1, num_labels + 1):
         mask = labels == i
         output[:, :][mask] = 255
-        # 计算二值图中值为255的像素点数量
-        coutNum = 0
-        for w in range(output.shape[0]):
-            for h in range(output.shape[1]):
-                if output[w][h] == 255:
-                    coutNum += 15
-        count_list.append(coutNum)
-    # 将面积最大的下标记录,第maxIdx个轮廓就是最大连通图
-    maxIdx = np.argmax(count_list) + 1
-    mask = labels == maxIdx
-    output[:, :][mask] = 255
     return output
 
 
@@ -2068,7 +2057,27 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
     margin
     Returns
     -------
-
+    Examples
+    --------
+        # 提取目录下所有图片的ROI区域
+        rootPath = '../sources/dataset/preprocessed/'
+        # categories = os.listdir(rootPath)
+        categories = ['0']
+        for category in categories:
+            count = 0
+            imgNames = os.listdir(rootPath + category + '/')
+            if not os.path.exists(rootPath + category + '/done/'):
+                os.mkdir(rootPath + category + '/done/')
+            for imgName in imgNames:
+                if not imgName[-3:] == 'jpg':
+                    continue
+                img = cv2.imread(rootPath + category + '/' + imgName, flags=0)
+                margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+                ret = extract_ROI(img, margin=margin, diff=-50, winStep=50)[0]
+                cv2.imwrite(rootPath + category + '/done/' + imgName, ret)
+                count += 1
+                print('class: {}, total number: {}, current: {}, left number: {}'.format(category, len(imgNames),
+                                                                                    imgName, len(imgNames) - count))
     """
     import numpy as np
     weight = img.shape[0]
@@ -2081,7 +2090,10 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
         # 滑动窗口前进
         winArea = img[:, startCol:endCol]
         croped = cropImg(winArea[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
-        mask = find_max_region(croped, topMargin=0, bottomMargin=0)
+        mask = find_max_region(croped, topMargin=0, bottomMargin=0, mbKSize=15)
+        # cv2.imshow('1', mask)
+        # cv2.imshow('2', winArea)
+        # cv2.waitKey(0)
         rectangleTopBorder = rectangleLeftBorder = rectangleButtonBorder = rectangleRightBorder = - 1
         for i in range(croped.shape[0]):
             if np.isin(255, mask[i, :]):
@@ -2100,7 +2112,8 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
                 rectangleRightBorder = croped.shape[1] - 1 - i
                 break
         # Todo 再加上一个评判标准，内部背景所占面积大小
-        maxValue = rectangleTopBorder * rectangleLeftBorder * rectangleButtonBorder * rectangleRightBorder
+        # maxValue = rectangleTopBorder * rectangleLeftBorder * rectangleButtonBorder * rectangleRightBorder
+        maxValue = (rectangleButtonBorder - rectangleTopBorder + 1) * (rectangleRightBorder - rectangleLeftBorder + 1)
         maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, maxValue])))
         startCol += winStep
         endCol += winStep

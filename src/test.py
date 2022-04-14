@@ -1,7 +1,10 @@
-import torchvision
+import os
+import sys
+import traceback
 
-from net.CnnRegression import ResNet50Regression
-from src.utils.utils import getAllFeatureVector
+import cv2
+
+from src.utils.utils import extract_ROI
 
 if __name__ == '__main__':
     # rootPath = '../sources/test/'
@@ -78,13 +81,42 @@ if __name__ == '__main__':
     #     original_location_img0[k[0]][k[1] - 1] = 255
     # flattened_img0 = ut.flatten(img_0, [512 - i for i in y0])
 
-    # 获取向量
-    model = ResNet50Regression(1)
-    modelLocation = './model/cnn_model/net_27.pth'
-    rootPath = '../sources/roi/'
-    transform = torchvision.transforms.ToTensor()
-    getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
-    # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
+    # 提取ROI
+    rootPath = '../sources/dataset/preprocessed/'
+    # categories = os.listdir(rootPath)
+    categories = ['12']
+    for category in categories:
+        count = 0
+        imgNames = os.listdir(rootPath + category + '/')
+        if not os.path.exists(rootPath + category + '/done/'):
+            os.mkdir(rootPath + category + '/done/')
+        for imgName in imgNames:
+            if not imgName[-3:] == 'jpg':
+                continue
+            # if not imgName == '7-041.jpg':
+            #     continue
+            try:
+                img = cv2.imread(rootPath + category + '/' + imgName, flags=0)
+                margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+                rets = extract_ROI(img, margin=margin, diff=-50, winStep=25, k=2)
+                count += 1
+                for idx, ret in enumerate(rets):
+                    cv2.imwrite(rootPath + category + '/done/' + idx.__str__() + '-' + imgName, ret)
+                print(
+                    'class: {}, total number: {}, current: {}, left number: {}'.format(category, len(imgNames), imgName,
+                                                                                       len(imgNames) - count))
+            except Exception as e:
+                with open('./failed', 'a+') as f:
+                    f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
+                    print(imgName + "处理时候发生错误，： " + e.__str__())
+                    traceback.print_exc(file=sys.stdout)
+    # # 获取向量
+    # model = ResNet50Regression(1)
+    # modelLocation = './model/cnn_model/net_27.pth'
+    # rootPath = '../sources/roi/'
+    # transform = torchvision.transforms.ToTensor()
+    # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
+    # # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
 
     # 机器学习模型训练过程
     # regr = Regression()
