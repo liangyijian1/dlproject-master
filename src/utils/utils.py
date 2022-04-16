@@ -1,6 +1,8 @@
+import math
+import time
+
 import numpy as np
 import torch
-
 from torch.utils.data import DataLoader
 
 
@@ -2080,48 +2082,109 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
                                                                                     imgName, len(imgNames) - count))
     """
     import numpy as np
-    weight = img.shape[0]
+    width = img.shape[0]
     startCol = 0
-    endCol = int(weight / 2)
+    endCol = int(width / 2)
     maxStatue = np.array([0] * 3)
-    while endCol != weight - 1:
-        if endCol >= weight - winStep + 1:
-            break
+    while endCol < width:
         # 滑动窗口前进
         winArea = img[:, startCol:endCol]
         croped = cropImg(winArea[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
-        mask = find_max_region(croped, topMargin=0, bottomMargin=0, mbKSize=15)
-        # cv2.imshow('1', mask)
-        # cv2.imshow('2', winArea)
-        # cv2.waitKey(0)
-        rectangleTopBorder = rectangleLeftBorder = rectangleButtonBorder = rectangleRightBorder = - 1
-        for i in range(croped.shape[0]):
-            if np.isin(255, mask[i, :]):
-                rectangleTopBorder = i
-                break
-        for i in range(croped.shape[0]):
-            if np.isin(255, mask[croped.shape[0] - 1 - i, :]):
-                rectangleButtonBorder = croped.shape[0] - 1 - i
-                break
-        for i in range(croped.shape[1]):
-            if np.isin(255, mask[:, i]):
-                rectangleLeftBorder = i
-                break
-        for i in range(croped.shape[1]):
-            if np.isin(255, mask[:, croped.shape[1] - 1 - i]):
-                rectangleRightBorder = croped.shape[1] - 1 - i
-                break
-        # Todo 再加上一个评判标准，内部背景所占面积大小
-        # maxValue = rectangleTopBorder * rectangleLeftBorder * rectangleButtonBorder * rectangleRightBorder
-        maxValue = (rectangleButtonBorder - rectangleTopBorder + 1) * (rectangleRightBorder - rectangleLeftBorder + 1)
-        maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, maxValue])))
+        E = calc_2D_Entropy(croped)
+        maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, E])))
         startCol += winStep
         endCol += winStep
     maxStatue = np.delete(maxStatue, [0], axis=0)
     ret = []
     for i in range(k):
         idx = np.argmax(maxStatue[:, -1])
-        temp = cropImg(img[:, maxStatue[idx, 0]:maxStatue[idx, 1]], margin + diff, margin - diff, 0, 0)
+        temp = cropImg(img[:, int(maxStatue[idx][0]):int(maxStatue[idx][1])], margin + diff, margin - diff, 0, 0)
         ret.append(temp)
         maxStatue = np.delete(maxStatue, [idx], axis=0)
     return ret
+
+
+def calc_2D_Entropy(img, N: int = 2):
+    start = time.time()
+    row = img.shape[0]
+    col = img.shape[1]
+    area = row * col
+    # towards 1 2 3 4分别为右 上 左 下
+    step = towards = 1
+    count = 0
+    temp = []
+    saveed = []
+    for i in range(row):
+        for j in range(col):
+            m = i
+            n = j
+            # 对每一个像素点提取领域信息
+            while step < 2 * N + 1:
+                while count != 2:
+                    count += 1
+                    k = step
+                    while k > 0:
+                        if towards == 1:
+                            n += 1
+                            temp.append((0 if n >= col or m >= row or n < 0 or m < 0 else img[m][n]))
+                        if towards == 2:
+                            m -= 1
+                            temp.append((0 if m < 0 or n < 0 or m >= row or n >= col else img[m][n]))
+                        if towards == 3:
+                            n -= 1
+                            temp.append((0 if n < 0 or m < 0 or m >= row or n >= col else img[m][n]))
+                        if towards == 4:
+                            m += 1
+                            temp.append((0 if m >= row or n >= col or m < 0 or n < 0 else img[m][n]))
+                        k -= 1
+                    towards = towards % 4 + 1
+                count = 0
+                step += 1
+            for left in range(2 * N):
+                n += 1
+                temp.append((0 if n >= col or m >= row or n < 0 or m < 0 else img[m][n]))
+            # 计算j值
+            jValue = sum(temp) / pow((2 * N + 1), 2)
+            # (i, j)元组信息保存
+            saveed.append((img[i][j], jValue))
+            # 恢复初始值
+            step = towards = 1
+            count = 0
+            temp = []
+    # 计算-E
+    _E = 0
+    savedSet = list(set(saveed))
+    savedSet.sort(key=saveed.index)
+    for item in savedSet:
+        fij = saveed.count(item)
+        pij = fij / area
+        _E += pij * math.log2(pij)
+    end = time.time()
+    print('图像熵计算时长为:{}， 熵值为：{}'.format(end - start, -_E))
+    return -_E
+
+    # start = time.time()
+    # S = img.shape
+    # IJ = []
+    # # 计算j
+    # for row in range(S[0]):
+    #     for col in range(S[1]):
+    #         Left_x = np.max([0, col - N])
+    #         Right_x = np.min([S[1], col + N + 1])
+    #         up_y = np.max([0, row - N])
+    #         down_y = np.min([S[0], row + N + 1])
+    #         region = img[up_y:down_y, Left_x:Right_x]  # 九宫格区域
+    #         j = (np.sum(region) - img[row][col]) / ((2 * N + 1) ** 2 - 1)
+    #         IJ.append([img[row][col], j])
+    # # 计算F(i,j)
+    # F = []
+    # arr = [list(i) for i in set(tuple(j) for j in IJ)]  # 去重，会改变顺序，不过此处不影响
+    # for i in range(len(arr)):
+    #     F.append(IJ.count(arr[i]))
+    # # 计算pij
+    # P = np.array(F) / (img.shape[0] * img.shape[1])  # 也是img的W*H
+    # # 计算熵
+    # E = np.sum([p * np.log2(1 / p) for p in P])
+    # end = time.time()
+    # print(end - start)
+    # return E

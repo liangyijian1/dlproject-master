@@ -1,20 +1,20 @@
 import os
-import sys
-import traceback
 
 import cv2
 
 from src.utils.utils import extract_ROI
 
 if __name__ == '__main__':
-    # rootPath = '../sources/test/'
-    # imgNames = os.listdir(rootPath)
-    # for imgName in imgNames:
-    #     img = cv2.imread(rootPath + imgName, 0)
-    #     margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    #     ret = extract_ROI(img, margin, diff=-50, winStep=30, k=1)
-    #     cv2.imwrite('../sources/roi/roi-' + imgName, ret[0])
-
+    rootPath = '../sources/test/'
+    imgNames = os.listdir(rootPath)
+    for imgName in imgNames:
+        img = cv2.imread(rootPath + imgName, 0)
+        margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+        ret = extract_ROI(img, margin, diff=-25, winStep=10, k=2)
+        k = 0
+        for item in ret:
+            cv2.imwrite('../sources/roi/{}-roi-'.format(k) + imgName, ret[k])
+            k += 1
     # # 手动标注表面展平
     # rootPath = '../sources/dataset/'
     # # imgPathNames = os.listdir(rootPath)
@@ -82,34 +82,35 @@ if __name__ == '__main__':
     # flattened_img0 = ut.flatten(img_0, [512 - i for i in y0])
 
     # 提取ROI
-    rootPath = '../sources/dataset/preprocessed/'
-    # categories = os.listdir(rootPath)
-    categories = ['12']
-    for category in categories:
-        count = 0
-        imgNames = os.listdir(rootPath + category + '/')
-        if not os.path.exists(rootPath + category + '/done/'):
-            os.mkdir(rootPath + category + '/done/')
-        for imgName in imgNames:
-            if not imgName[-3:] == 'jpg':
-                continue
-            # if not imgName == '7-041.jpg':
-            #     continue
-            try:
-                img = cv2.imread(rootPath + category + '/' + imgName, flags=0)
-                margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-                rets = extract_ROI(img, margin=margin, diff=-50, winStep=25, k=2)
-                count += 1
-                for idx, ret in enumerate(rets):
-                    cv2.imwrite(rootPath + category + '/done/' + idx.__str__() + '-' + imgName, ret)
-                print(
-                    'class: {}, total number: {}, current: {}, left number: {}'.format(category, len(imgNames), imgName,
-                                                                                       len(imgNames) - count))
-            except Exception as e:
-                with open('./failed', 'a+') as f:
-                    f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
-                    print(imgName + "处理时候发生错误，： " + e.__str__())
-                    traceback.print_exc(file=sys.stdout)
+    # rootPath = '../sources/dataset/preprocessed/'
+    # # categories = os.listdir(rootPath)
+    # categories = ['12']
+    # for category in categories:
+    #     count = 0
+    #     imgNames = os.listdir(rootPath + category + '/')
+    #     if not os.path.exists(rootPath + category + '/done/'):
+    #         os.mkdir(rootPath + category + '/done/')
+    #     for imgName in imgNames:
+    #         if not imgName[-3:] == 'jpg':
+    #             continue
+    #         # if not imgName == '7-041.jpg':
+    #         #     continue
+    #         try:
+    #             img = cv2.imread(rootPath + category + '/' + imgName, flags=0)
+    #             margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+    #             rets = extract_ROI(img, margin=margin, diff=-30, winStep=25, k=2)
+    #             count += 1
+    #             for idx, ret in enumerate(rets):
+    #                 cv2.imwrite(rootPath + category + '/done/' + idx.__str__() + '-' + imgName, ret)
+    #             print(
+    #                 'class: {}, total number: {}, current: {}, left number: {}'.format(category, len(imgNames), imgName,
+    #                                                                                    len(imgNames) - count))
+    #         except Exception as e:
+    #             with open('./failed', 'a+') as f:
+    #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
+    #                 print(imgName + "处理时候发生错误，： " + e.__str__())
+    #                 traceback.print_exc(file=sys.stdout)
+
     # # 获取向量
     # model = ResNet50Regression(1)
     # modelLocation = './model/cnn_model/net_27.pth'
