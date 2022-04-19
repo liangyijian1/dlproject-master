@@ -1,14 +1,14 @@
+import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision
 from torch.utils.tensorboard import SummaryWriter
 
 from net.MyDataset import *
-from net.resnet18 import init_weight
-from net.resnet50 import ResNet50, ResidualBlock
+from net.resnet18 import init_weight, ResNet18
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-writer = SummaryWriter('./Result')
+writer = SummaryWriter(log_dir='scalar')
 
 
 def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimizer, scheduler, trainLog, testLog, valLog,
@@ -31,7 +31,7 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
             sum_loss += loss.item()
             writer.add_scalar('Train', sum_loss / (i + 1), (i + 1 + k * length))
             print('[tra epoch:%d, iter:%d] |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
-        writer.add_scalar('Train Ave', sum_loss / total, epoch)
+        writer.add_scalar('scalar/train', sum_loss / total, epoch)
         print('[tra epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
         trainLog.write('[tra epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
         trainLog.write('\n\n')
@@ -52,7 +52,7 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
                 loss = lossFun(outputs, labels)
                 sum_loss += loss.item()
                 print('[val epoch:%d, iter:%d] |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
-            writer.add_scalar('Val', sum_loss / total, epoch)
+            writer.add_scalar('scalar/val', sum_loss / total, epoch)
             print('[val epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
             valLog.write('[val epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
             valLog.write('\n')
@@ -70,6 +70,7 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
             loss = lossFun(outputs, labels)
             sum_loss += loss.item()
             print('Loss: %.03f' % (sum_loss / (i + 1)))
+            writer.add_scalar('scalar/test', sum_loss / (i + 1), i)
             testLog.write('learning rate: {}'.format(scheduler.optimizer.defaults['lr']))
             testLog.write('\n')
             testLog.write('Loss: %.03f' % (sum_loss / (i + 1)))
@@ -81,20 +82,26 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
         testLog.flush()
 
 
-EPOCH = 300
+EPOCH = 35
 BATCH_SIZE = 10
 LR = 0.01
-imgPath = '../sources/pre_train/'
+imgPath = '../sources/dataset/dataset/'
 transform_train = torchvision.transforms.Compose([
     torchvision.transforms.Resize(size=(224, 224)),
     torchvision.transforms.RandomHorizontalFlip(p=0.5),
+    torchvision.transforms.RandomRotation(degrees=15),
     torchvision.transforms.ToTensor(),
 ])
 
 full_dataset = torchvision.datasets.ImageFolder(imgPath, './label.txt', transform_train)
 
 trainLoader, testLoader, valLoader = load_local_dataset(full_dataset, BATCH_SIZE)
-net = ResNet50(ResidualBlock, 1, 4).to(device)
+net = ResNet18(5).to(device)
+# net = ResNet50(ResidualBlock, 1, 5).to(device)
+# preDict = torch.load('./model/preTrainModel/net_14.pth')
+# preDict.pop('fc.weight')
+# preDict.pop('fc.bias')
+# net.load_state_dict(preDict, strict=False)
 net.apply(init_weight)
 
 loss = nn.CrossEntropyLoss()
@@ -107,8 +114,9 @@ if __name__ == "__main__":
         os.makedirs(modelPath)
     if not os.path.exists('./res'):
         os.makedirs('./res')
-    with open("res/preTrainRes/test.txt", "w") as f:
-        with open("res/preTrainRes/log.txt", "w") as f2:
-            with open("res/preTrainRes/val.txt", 'w') as f3:
+    with open("res/test.txt", "w") as f:
+        with open("res/log.txt", "w") as f2:
+            with open("res/val.txt", 'w') as f3:
                 startTrain(net, trainLoader, testLoader, valLoader,
                            EPOCH, loss, optimizer, scheduler, f2, f, f3, savePath=modelPath)
+    writer.close()

@@ -1,20 +1,26 @@
-import os
-
 import cv2
 
-from src.utils.utils import extract_ROI
+from src.utils.utils import *
+import cv2
+
+from src.utils.utils import *
 
 if __name__ == '__main__':
-    rootPath = '../sources/test/'
-    imgNames = os.listdir(rootPath)
-    for imgName in imgNames:
-        img = cv2.imread(rootPath + imgName, 0)
-        margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-        ret = extract_ROI(img, margin, diff=-25, winStep=10, k=2)
-        k = 0
-        for item in ret:
-            cv2.imwrite('../sources/roi/{}-roi-'.format(k) + imgName, ret[k])
-            k += 1
+    img = cv2.imread('../sources/dataset/preprocessed/12/1-239.jpg', 0)
+    margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+    ret = extract_ROI(img, margin, diff=-25, winStep=10, k=1)
+
+
+    # rootPath = '../sources/test/'
+    # imgNames = os.listdir(rootPath)
+    # for imgName in imgNames:
+    #     img = cv2.imread(rootPath + imgName, 0)
+    #     margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
+    #     ret = extract_ROI(img, margin, diff=-25, winStep=10, k=2)
+    #     k = 0
+    #     for item in ret:
+    #         cv2.imwrite('../sources/roi/{}-roi-'.format(k) + imgName, ret[k])
+    #         k += 1
     # # 手动标注表面展平
     # rootPath = '../sources/dataset/'
     # # imgPathNames = os.listdir(rootPath)
@@ -112,26 +118,46 @@ if __name__ == '__main__':
     #                 traceback.print_exc(file=sys.stdout)
 
     # # 获取向量
-    # model = ResNet50Regression(1)
-    # modelLocation = './model/cnn_model/net_27.pth'
-    # rootPath = '../sources/roi/'
+    # model = ResNet18DeepFeature(num_classes=5)
+    # modelLocation = './model/cnn_model/net_21.pth'
+    # rootPath = '../sources/dataset/test/'
     # transform = torchvision.transforms.ToTensor()
-    # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
-    # # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
+    # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform,
+    #                     labelPath='./label.txt')
 
-    # 机器学习模型训练过程
+    # # 机器学习模型训练过程
     # regr = Regression()
     #
-    # X, y = get_data('./res/vector/vector.txt')
-    # # model, parm, score = regr.rfRegression(X, y, 1, 200, 1, 30, 1, 20, cv_num=10, n_iter=4)
-    # model, parm, score = regr.svmRegression(X, y, [0.01, 0.1, 1.0, 10], [0.01, 0.1, 1.0, 10], [0.01, 0.1, 1.0, 10], 10, 4)
+    # X, y = get_data('./res/vector/trainVector.txt')
+    # model, parm, score = regr.rfRegression(X, y, 1, 200, 1, 30, 1, 20, cv_num=3)
+    # # model, parm, score = regr.svmRegression(X, y, [0.01, 0.1, 1.0, 10], [0.01, 0.1, 1.0, 10], [0.01, 0.1, 1.0, 10],
+    # #                                         cv_num=3)
     # # 直接使用predict()函数进行预测
     # y_pre = model.predict(X)
     # # 使用utils.py中的saveModel()函数将模型保存到本地
-    # saveModel('model/ml_model/svm.pkl', model)
+    # saveModel('model/ml_model/rf.pkl', model)
     # print(r2_score(y, y_pre).__str__() + '   ' + score.__str__())
 
-    # 使用机器学习模型验证
+    # # 对testVector验证
+    # regr = Regression()
+    #
+    # X, y = get_data('./res/vector/testVector.txt')
+    # rf_pre = loadModel('model/ml_model/svm.pkl').predict(X)
+    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
+    # print('Random Forest预测的r2_score是 {}     Svm预测的r2_score是 {}'.format(r2_score(y, rf_pre), r2_score(y, svm_pre)))
+
+    # # 使用机器学习模型验证
+    # transform = torchvision.transforms.Compose([
+    #     torchvision.transforms.ToTensor(),
+    #     torchvision.transforms.Resize(size=(224, 224)),
+    # ])
+    # img = cv2.imread('../sources/dataset/dataset/12/0-8-435.jpg', 0)
+    # feature = TestModel(ResNet50Regression(1), 'model/cnn_model/transfer_resnet50.pth', strict=False) \
+    #     .getFeatureVector(transform(img).view(1, 1, 224, 224))
+    # rf_pre = loadModel('model/ml_model/svm.pkl').predict(feature.reshape(1, -1))
+    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(feature.reshape(1, -1))
+    # print('Random Forest回归预测的时间是 {}\nSvm回归预测的时间是 {}'.format(rf_pre, svm_pre))
+
     # transform = torchvision.transforms.Compose([
     #     torchvision.transforms.ToTensor(),
     #     torchvision.transforms.Resize(size=(224, 224)),
@@ -156,17 +182,17 @@ if __name__ == '__main__':
     # ret12 = standardization(img_12)
     # img_12 = denoise(ret12, 15, 3, 30)
     #
-    # feature_0 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
+    # feature_0 = TestModel(ResNet50Regression(1), 'model/cnn_model/transfer_resnet50.pth', strict=False) \
     #     .getFeatureVector(transform(img_0).view(1, 1, 224, 224))
-    # feature_3 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
+    # feature_3 = TestModel(ResNet50Regression(1), 'model/cnn_model/transfer_resnet50.pth', strict=False) \
     #     .getFeatureVector(transform(img_3).view(1, 1, 224, 224))
-    # feature_6 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
+    # feature_6 = TestModel(ResNet50Regression(1), 'model/cnn_model/transfer_resnet50.pth', strict=False) \
     #     .getFeatureVector(transform(img_6).view(1, 1, 224, 224))
-    # feature_9 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
+    # feature_9 = TestModel(ResNet50Regression(1), 'model/cnn_model/transfer_resnet50.pth', strict=False) \
     #     .getFeatureVector(transform(img_9).view(1, 1, 224, 224))
-    # feature_12 = TestModel(ResNet50Regression(1), 'model/cnn_model/net_27.pth', strict=False) \
+    # feature_12 = TestModel(ResNet50Regression(1), 'model/cnn_model/transfer_resnet50.pth', strict=False) \
     #     .getFeatureVector(transform(img_12).view(1, 1, 224, 224))
-    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(feature_12.reshape(1, -1))
+    # rf_pre = loadModel('model/ml_model/svm.pkl').predict(feature_12.reshape(1, -1))
     # svm_pre = loadModel('model/ml_model/svm.pkl').predict(feature_12.reshape(1, -1))
     # print('Random Forest回归预测的时间是 {}\nSvm回归预测的时间是 {}'.format(rf_pre, svm_pre))
 
@@ -259,14 +285,14 @@ if __name__ == '__main__':
     # 对文件夹内的图像进行评测
     # rootPath = '../sources/dataset/test/'
     # model = ResNet50Regression(1)
-    # modelLocation = './model/cnn_model/net_27.pth'
+    # modelLocation = './model/cnn_model/transfer_resnet50.pth'
     # transform = torchvision.transforms.ToTensor()
     # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform)
     # make_labels('./res/vector/', save_path='./res/vector/', label_location='./label.txt')
 
     # # 集合的测试
-    # X, y = get_data('./res/vector.txt')
-    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(X)
+    # X, y = get_data('./res/trainVector.txt')
+    # rf_pre = loadModel('model/ml_model/svm.pkl').predict(X)
     # svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
     # print(
     #     'Random Forest对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(

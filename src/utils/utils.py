@@ -1,5 +1,4 @@
 import math
-import time
 
 import numpy as np
 import torch
@@ -1897,12 +1896,14 @@ def getAllFeatureVector(rootPath: str,
                         model,
                         modelLocation: str,
                         transform,
+                        labelPath: str,
                         txtRootPath: str = ''):
     """
     將制定目錄下的各類圖片轉換成向量的形式，以便操作。
     特徵提取是由CNN完成
     Parameters
     ----------
+        labelPath
         rootPath: Sting
             图片根目录。
             如果你的其中一张图片路径是../sources/dataset/apple/apple1.jpg，那么rootPath = '../sources/dataset/'
@@ -1931,28 +1932,34 @@ def getAllFeatureVector(rootPath: str,
 
     """
     import numpy as np
+    import json
     import os
     import cv2
     temp = []
+    count = 0
     names = os.listdir(rootPath)
     print('wait a minute...')
-    try:
-        for name in names:
-            if os.path.isfile(rootPath + name):
-                continue
-            imgNames = os.listdir(rootPath + name + '/')
-            for imgName in imgNames:
-                img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
-                img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_CUBIC)
-                k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
-                    .getFeatureVector(transform(img).view(1, 1, 224, 224))
-                temp.append(k)
+    with open(labelPath, 'r') as f:
+        labelDict = json.load(f)
+        try:
+            for name in names:
+                if os.path.isfile(rootPath + name):
+                    continue
+                imgNames = os.listdir(rootPath + name + '/')
+                for imgName in imgNames:
+                    img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
+                    img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_CUBIC)
+                    k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
+                        .getFeatureVector(transform(img).view(1, 1, 224, 224))
+                    k = np.append(k, labelDict[name])
+                    temp.append(k)
+                    count += 1
+                print(name + ' saved successfully! number is {}'.format(count))
+                count = 0
             temp = np.array(temp)
-            np.savetxt(txtRootPath + name + '.txt', temp, '%f', delimiter=',')
-            print(name + '.txt ' + 'saved successfully! The number of records is {}'.format(temp.shape[0]))
-            temp = []
-    except Exception as e:
-        print('Save failed\n' + e.__str__())
+            np.savetxt(txtRootPath + 'vector' + '.txt', temp, '%f', delimiter=',')
+        except Exception as e:
+            print('Save failed\n' + e.__str__())
 
 
 def make_labels(root_path: str, save_path: str, label_location: str):
@@ -2105,9 +2112,11 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
 
 
 def calc_2D_Entropy(img, N: int = 2):
-    start = time.time()
-    row = img.shape[0]
-    col = img.shape[1]
+    import cv2
+    # start = time.time()
+    shrink = cv2.resize(img, dsize=(64, 64))
+    row = shrink.shape[0]
+    col = shrink.shape[1]
     area = row * col
     # towards 1 2 3 4分别为右 上 左 下
     step = towards = 1
@@ -2126,27 +2135,27 @@ def calc_2D_Entropy(img, N: int = 2):
                     while k > 0:
                         if towards == 1:
                             n += 1
-                            temp.append((0 if n >= col or m >= row or n < 0 or m < 0 else img[m][n]))
+                            temp.append((0 if n >= col or m >= row or n < 0 or m < 0 else shrink[m][n]))
                         if towards == 2:
                             m -= 1
-                            temp.append((0 if m < 0 or n < 0 or m >= row or n >= col else img[m][n]))
+                            temp.append((0 if m < 0 or n < 0 or m >= row or n >= col else shrink[m][n]))
                         if towards == 3:
                             n -= 1
-                            temp.append((0 if n < 0 or m < 0 or m >= row or n >= col else img[m][n]))
+                            temp.append((0 if n < 0 or m < 0 or m >= row or n >= col else shrink[m][n]))
                         if towards == 4:
                             m += 1
-                            temp.append((0 if m >= row or n >= col or m < 0 or n < 0 else img[m][n]))
+                            temp.append((0 if m >= row or n >= col or m < 0 or n < 0 else shrink[m][n]))
                         k -= 1
                     towards = towards % 4 + 1
                 count = 0
                 step += 1
             for left in range(2 * N):
                 n += 1
-                temp.append((0 if n >= col or m >= row or n < 0 or m < 0 else img[m][n]))
+                temp.append((0 if n >= col or m >= row or n < 0 or m < 0 else shrink[m][n]))
             # 计算j值
             jValue = sum(temp) / pow((2 * N + 1), 2)
             # (i, j)元组信息保存
-            saveed.append((img[i][j], jValue))
+            saveed.append((shrink[i][j], jValue))
             # 恢复初始值
             step = towards = 1
             count = 0
@@ -2159,32 +2168,93 @@ def calc_2D_Entropy(img, N: int = 2):
         fij = saveed.count(item)
         pij = fij / area
         _E += pij * math.log2(pij)
-    end = time.time()
-    print('图像熵计算时长为:{}， 熵值为：{}'.format(end - start, -_E))
+    # end = time.time()
     return -_E
 
-    # start = time.time()
-    # S = img.shape
-    # IJ = []
-    # # 计算j
-    # for row in range(S[0]):
-    #     for col in range(S[1]):
-    #         Left_x = np.max([0, col - N])
-    #         Right_x = np.min([S[1], col + N + 1])
-    #         up_y = np.max([0, row - N])
-    #         down_y = np.min([S[0], row + N + 1])
-    #         region = img[up_y:down_y, Left_x:Right_x]  # 九宫格区域
-    #         j = (np.sum(region) - img[row][col]) / ((2 * N + 1) ** 2 - 1)
-    #         IJ.append([img[row][col], j])
-    # # 计算F(i,j)
-    # F = []
-    # arr = [list(i) for i in set(tuple(j) for j in IJ)]  # 去重，会改变顺序，不过此处不影响
-    # for i in range(len(arr)):
-    #     F.append(IJ.count(arr[i]))
-    # # 计算pij
-    # P = np.array(F) / (img.shape[0] * img.shape[1])  # 也是img的W*H
-    # # 计算熵
-    # E = np.sum([p * np.log2(1 / p) for p in P])
-    # end = time.time()
-    # print(end - start)
-    # return E
+
+def random_run(probability: int, func, **args):
+    """
+    以一点的概率来执行某个函数
+    Parameters
+    ----------
+    probability:int
+        概率值
+    func:builtin_function_or_method
+        需要回调执行的函数
+    args:dict
+        func的参数
+    Returns
+    -------
+    Examples
+    -------
+        args = {'center': (rows / 2, cols / 2), 'angle': k, 'scale': 1}
+        M = random_run(rotationProbability, cv2.getRotationMatrix2D, **args)
+
+    """
+    import random
+    list = []
+    # list中放入probability个1
+    for i in range(probability):
+        list.append(1)
+    # 剩下的位置放入0
+    for x in range(100 - probability):
+        list.append(0)
+    # 随机抽取一个
+    a = random.choice(list)
+    if a == 0:
+        return None
+    if a == 1:
+        return func(**args)
+
+
+def dataAugmentation(imgPath: str, rotationProbability: int, angle: int) -> None:
+    """
+    数据增强（水平翻转和旋转）
+    Parameters
+    ----------
+    imgPath: str
+        图片根路径
+    rotationProbability: int
+        执行旋转操作的概率
+    angle: int
+        旋转的角度区间,[-angle, 0)（0, angle]
+
+    Examples
+    -------
+        lists = os.listdir('../sources/dataset/test/')
+        for item in lists:
+            dataAugmentation('../sources/dataset/test/' + item + '/', rotationProbability=35, angle=5)
+            print(item, ' done!')
+
+    """
+    import os
+    import cv2
+    import random
+    imgNames = os.listdir(imgPath)
+    # 对数据集中的所有图像做水平翻转
+    for imgName in imgNames:
+        if imgName[-3:] != 'jpg':
+            continue
+        img = cv2.imread(imgPath + imgName, 0)
+        rows = img.shape[0]
+        cols = img.shape[1]
+        flip = cv2.flip(img, 1)
+        cv2.imwrite(imgPath + 'flip-' + imgName, flip)
+    print('翻转完成!')
+    # 重新对数据集内的新数据做一次随机旋转的操作
+    _imgNames = os.listdir(imgPath)
+    for _imgName in _imgNames:
+        if _imgName[-3:] != 'jpg':
+            continue
+        _img = cv2.imread(imgPath + _imgName, 0)
+        rows = _img.shape[0]
+        cols = _img.shape[1]
+        k = 0
+        while k == 0:
+            k = random.randint(-angle, angle)
+        args = {'center': (rows / 2, cols / 2), 'angle': k, 'scale': 1}
+        M = random_run(rotationProbability, cv2.getRotationMatrix2D, **args)
+        if M is not None:
+            dst = cv2.warpAffine(_img, M, (rows, cols))
+            cv2.imwrite(imgPath + 'rotation-' + _imgName, dst)
+    print('旋转完成！')

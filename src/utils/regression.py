@@ -282,9 +282,9 @@ class Regression:
             # 直接使用predict()函数进行预测
             y_pre = rf.predict(X_test)
             # 使用utils.py中的saveModel()函数将模型保存到本地
-            saveModel('rf.pkl', rf)
+            saveModel('svm.pkl', rf)
             # 使用utils.py中的loadModel()函数来调用本地模型，并进行预测
-            y_pre = loadModel('rf.pkl').predict(X_test)
+            y_pre = loadModel('svm.pkl').predict(X_test)
 
         Notes
         --------

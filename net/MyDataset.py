@@ -51,7 +51,7 @@ def img_preprocess_test(basePath):
 
 
 def load_local_dataset(all_dataset, batch_size):
-    pre_size = int(0.9 * len(all_dataset))
+    pre_size = int(0.95 * len(all_dataset))
     val_size = len(all_dataset) - pre_size
     train_size = int(0.8 * pre_size)
     test_size = pre_size - train_size
