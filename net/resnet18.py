@@ -9,7 +9,8 @@ class ChannelAttention(nn.Module):
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.ca = nn.Sequential(
             nn.Linear(in_features=channel, out_features=int(channel / r)),
-            nn.ReLU(inplace=True),
+            # nn.ReLU(inplace=True),
+            nn.SELU(inplace=True),
             nn.Linear(in_features=int(channel / r), out_features=channel),
             nn.Sigmoid()
         )
@@ -27,7 +28,8 @@ class ResidualBlock(nn.Module):
         self.left = nn.Sequential(
             nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(outchannel),
-            nn.ReLU(inplace=True),
+            # nn.ReLU(inplace=True),
+            nn.SELU(inplace=True),
             nn.Conv2d(outchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(outchannel)
         )
@@ -53,17 +55,20 @@ class ResNet(nn.Module):
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channel, 64, kernel_size=3, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.SELU(),
         )
         self.conv2 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.SELU(),
         )
         self.conv3 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.SELU(),
         )
         self.maxPool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self.make_layer(ResidualBlock, 64, 2, stride=1)
@@ -75,6 +80,7 @@ class ResNet(nn.Module):
         self.layer4 = self.make_layer(ResidualBlock, 512, 2, stride=2)
         self.ca4 = ChannelAttention(512, 16)
         self.fc = nn.Linear(512, num_classes)
+        self.do = nn.Dropout(p=0.3)
 
     def make_layer(self, block, channels, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
@@ -99,6 +105,7 @@ class ResNet(nn.Module):
         out = self.ca4(out).view(out.size(0), 512, 1, 1) * out
         out = F.adaptive_avg_pool2d(out, 1)
         out = out.view(out.size(0), -1)
+        out = self.do(out)
         out = self.fc(out)
         return out
 
@@ -110,17 +117,20 @@ class ResNet18DeepFeature(nn.Module):
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channel, 64, kernel_size=3, stride=2, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.SELU(),
         )
         self.conv2 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.SELU(),
         )
         self.conv3 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.SELU(),
         )
         self.maxPool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self.make_layer(residualBlock, 64, 2, stride=1)
@@ -159,7 +169,7 @@ class ResNet18DeepFeature(nn.Module):
 
 
 def ResNet18(num_classes):
-    return ResNet(num_classes=num_classes)
+    return ResNet(ResidualBlock, num_classes=num_classes)
 
 
 def init_weight(m):

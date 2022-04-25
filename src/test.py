@@ -1,26 +1,54 @@
-import cv2
+import torch.utils.data
+import torchvision.transforms
 
+from net.resnet18 import ResNet18
 from src.utils.utils import *
-import cv2
 
-from src.utils.utils import *
+# def hook_func(module, input):
+#     x = input[0][0]
+#     x = x.unsqueeze(1)
+#     global i
+#     image_batch = torchvision.utils.make_grid(x, padding=4)
+#     image_batch = image_batch.numpy().transpose(1, 2, 0)
+#     writer.add_image("test", image_batch, i, dataformats='HWC')
+#     i += 1
+
 
 if __name__ == '__main__':
-    img = cv2.imread('../sources/dataset/preprocessed/12/1-239.jpg', 0)
-    margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    ret = extract_ROI(img, margin, diff=-25, winStep=10, k=1)
+    pass
+    # lists = os.listdir('../sources/dataset/withoutFlatten/preprocess/')
+    # for item in lists:
+    #     dataAugmentation('../sources/dataset/withoutFlatten/preprocess/' + item + '/', rotationProbability=35, angle=0)
+    #     print(item, ' done!')
 
+    transform = torchvision.transforms.Compose([
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Resize(size=(256, 256)),
+    ])
+    # img = cv2.imread('3-384.jpg', 0)
+    #
+    # TestModel(ResNet18(5), './model/cnn_model/net_9.pth').testSingleImg(transform(img).view(1, 1, 256, 256), visualization=True, log_dir='scalar/test', comment='test')
+    dataset = torchvision.datasets.ImageFolder('../sources/dataset/afterFlatten/test/', transform)
+    testDataloader = torch.utils.data.DataLoader(dataset, batch_size=15)
+    TestModel(ResNet18(5), './model/cnn_model/net_11.pth').testDataLoader(testDataloader, True)
 
-    # rootPath = '../sources/test/'
-    # imgNames = os.listdir(rootPath)
-    # for imgName in imgNames:
-    #     img = cv2.imread(rootPath + imgName, 0)
-    #     margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    #     ret = extract_ROI(img, margin, diff=-25, winStep=10, k=2)
-    #     k = 0
-    #     for item in ret:
-    #         cv2.imwrite('../sources/roi/{}-roi-'.format(k) + imgName, ret[k])
-    #         k += 1
+    # rootPath = '../sources/dataset/withoutFlatten/dataset/'
+    # dirs = os.listdir(rootPath)
+    # for item in dirs:
+    #     imgNames = os.listdir(rootPath + item)
+    #     count = 0
+    #     for imgName in imgNames:
+    #         if imgName[-3:] != 'jpg':
+    #             continue
+    #         img = cv2.imread(rootPath + item + '/' + imgName, 0)
+    #         sd = standardization(img)
+    #         denoiseImg = denoise(sd, 15, -1, 30)
+    #         if not os.path.exists('../sources/dataset/withoutFlatten/preprocess/' + item + '/'):
+    #             os.mkdir('../sources/dataset/withoutFlatten/preprocess/' + item + '/')
+    #         cv2.imwrite('../sources/dataset/withoutFlatten/preprocess/' + item + '/' + imgName, denoiseImg)
+    #         count += 1
+    #         print('class:{}, {} done! Total:{}, left:{}'.format(item, imgName, len(imgNames), len(imgNames) - count))
+
     # # 手动标注表面展平
     # rootPath = '../sources/dataset/'
     # # imgPathNames = os.listdir(rootPath)
@@ -302,3 +330,4 @@ if __name__ == '__main__':
     #     'SVM对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
     #         r2_score(y, svm_pre), mean_squared_error(y, svm_pre), mean_absolute_error(y, svm_pre),
     #         explained_variance_score(y, svm_pre), median_absolute_error(y, svm_pre)))
+

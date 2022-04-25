@@ -1,3 +1,5 @@
+import json
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -8,7 +10,8 @@ from net.MyDataset import *
 from net.resnet18 import init_weight, ResNet18
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-writer = SummaryWriter(log_dir='scalar')
+print(device)
+writer = SummaryWriter(log_dir='scalar/train')
 
 
 def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimizer, scheduler, trainLog, testLog, valLog,
@@ -52,7 +55,7 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
                 loss = lossFun(outputs, labels)
                 sum_loss += loss.item()
                 print('[val epoch:%d, iter:%d] |Loss: %.05f' % (k + 1, (i + 1 + k * length), sum_loss / (i + 1)))
-            writer.add_scalar('scalar/val', sum_loss / total, epoch)
+                writer.add_scalar('scalar/val', sum_loss / (i + 1), (i + 1 + k * length))
             print('[val epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
             valLog.write('[val epoch:{}] | Average Loss：{:.5f}'.format(k + 1, sum_loss / total))
             valLog.write('\n')
@@ -82,18 +85,18 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
         testLog.flush()
 
 
-EPOCH = 35
-BATCH_SIZE = 10
+EPOCH = 50
+BATCH_SIZE = 13
 LR = 0.01
-imgPath = '../sources/dataset/dataset/'
+imgPath = '../sources/dataset/withoutFlatten/preprocess/'
 transform_train = torchvision.transforms.Compose([
-    torchvision.transforms.Resize(size=(224, 224)),
-    torchvision.transforms.RandomHorizontalFlip(p=0.5),
-    torchvision.transforms.RandomRotation(degrees=15),
+    torchvision.transforms.Resize(size=(256, 256)),
     torchvision.transforms.ToTensor(),
 ])
 
-full_dataset = torchvision.datasets.ImageFolder(imgPath, './label.txt', transform_train)
+full_dataset = torchvision.datasets.ImageFolder(imgPath, transform_train)
+with open('./label.txt', 'w+') as f:
+    json.dump(full_dataset.class_to_idx, f)
 
 trainLoader, testLoader, valLoader = load_local_dataset(full_dataset, BATCH_SIZE)
 net = ResNet18(5).to(device)
@@ -103,10 +106,12 @@ net = ResNet18(5).to(device)
 # preDict.pop('fc.bias')
 # net.load_state_dict(preDict, strict=False)
 net.apply(init_weight)
+images = torch.randn(1, 1, 28, 28)
+writer.add_graph(net, images)
 
 loss = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=LR)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=4)
+optimizer = optim.SGD(net.parameters(), lr=LR, weight_decay=0.001, momentum=0.5)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=2)
 
 if __name__ == "__main__":
     modelPath = './model/'

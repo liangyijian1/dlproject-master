@@ -1,4 +1,6 @@
+import functools
 import math
+import operator
 
 import numpy as np
 import torch
@@ -171,7 +173,7 @@ def findBestParmByRandomizedSearchCV(X, y, estimator, parm_list, cv_num, n_iter=
 
 
 def svrParm(X, y, C, gama, epsilon, cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     该方法为SVM回归模型中的三个超参数自动调参。这两个超参数分别是惩罚系数C，RBF核函数的系数γ和损失距离度量ϵ
 
     Parameters
@@ -227,7 +229,7 @@ def svrParm(X, y, C, gama, epsilon, cv_num=3, n_iter=20, n_jobs=-1):
     --------
         best_parm, best_score = svrParm(X_train, y_train, C=C, gama=gama, epsilon=epsilon, cv_num=cv_num, n_iter=n_iter)
 
-    '''
+    """
     from sklearn.svm import SVR
     # {'C': 10.0, 'epsilon': 0.0, 'gamma': 0.7142857142857143}
     parm_list = {"C": C, "gamma": gama, "epsilon": epsilon}
@@ -238,7 +240,7 @@ def svrParm(X, y, C, gama, epsilon, cv_num=3, n_iter=20, n_jobs=-1):
 
 
 def svcParm(X, y, C=None, gama=None, cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     该方法为SVM分类模型中的两个超参数自动调参。这两个超参数分别是惩罚系数C和RBF核函数的系数γ
 
     Parameters
@@ -284,7 +286,7 @@ def svcParm(X, y, C=None, gama=None, cv_num=3, n_iter=20, n_jobs=-1):
         best_score : 数据类型为'float'
             模型交叉验证得分
 
-    '''
+    """
     parm_list = {"C": C, "gamma": gama}
     best_params, best_score = findBestParmByRandomizedSearchCV(X, y, SVC(), parm_list=parm_list, cv_num=cv_num,
                                                                n_iter=n_iter, n_jobs=n_jobs)
@@ -297,7 +299,7 @@ def rfRegressionParm(X, y,
                      max_depth_start, max_depth_end, max_depth_step,
                      min_samples_leaf_start, min_samples_leaf_end, min_samples_leaf_step,
                      cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     优化随机森林回归的中决策树的个数
 
     Parameters
@@ -380,7 +382,7 @@ def rfRegressionParm(X, y,
                                                 1, 20, 1,
                                                 10, 20)
 
-    '''
+    """
     import numpy as np
     from sklearn import ensemble
     parm_grid = {'n_estimators': np.arange(n_tree_start, n_tree_end, n_tree_step),
@@ -454,9 +456,9 @@ def dtRegressionParm(X, y, max_depth_start, max_depth_end, max_depth_step, cv_nu
 
 
 def knnRegressionParm(X, y, n_neighbors_start, n_neighbors_end, n_neighbors_step, cv_num, n_jobs):
-    '''
+    """
     优化knn回归中的K值
-    
+
     Parameters
     ----------
         X : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
@@ -489,7 +491,7 @@ def knnRegressionParm(X, y, n_neighbors_start, n_neighbors_end, n_neighbors_step
 
         n_jobs : 数据类型为'int'
             用来设定cpu的运行情况。默认n_jobs = -1为使用全部cpu
-        
+
     Returns
     -------
         best_parm : 字典
@@ -499,7 +501,7 @@ def knnRegressionParm(X, y, n_neighbors_start, n_neighbors_end, n_neighbors_step
         best_score : float
             模型交叉验证得分
 
-    '''
+    """
     from sklearn.neighbors import KNeighborsRegressor
     import numpy as np
     parm_grid = {'n_neighbors': np.arange(n_neighbors_start, n_neighbors_end, n_neighbors_step)}
@@ -510,9 +512,9 @@ def knnRegressionParm(X, y, n_neighbors_start, n_neighbors_end, n_neighbors_step
 
 def baggingRegressionParm(X, y, base_estimator, n_estimators_start, n_estimators_end, n_estimators_step, cv_num=3,
                           n_jobs=-1):
-    '''
+    """
     优化bagging的中基学习器的数量
-    
+
     Parameters
     ----------
         X : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
@@ -536,7 +538,7 @@ def baggingRegressionParm(X, y, base_estimator, n_estimators_start, n_estimators
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的左端点。程序将会在区间内选取最优参数。
             例如n_estimators_start = 1
 
-            
+
         n_estimators_end : 数据类型为'int'
             基学习器的数量。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的右端点。程序将会在区间内选取最优参数。
@@ -552,7 +554,7 @@ def baggingRegressionParm(X, y, base_estimator, n_estimators_start, n_estimators
 
         n_jobs : int
             用来设定cpu的运行情况。默认n_jobs = -1为使用全部cpu
-        
+
     Returns
     -------
         best_parm : 字典
@@ -569,7 +571,8 @@ def baggingRegressionParm(X, y, base_estimator, n_estimators_start, n_estimators
         随机森林作为基学习器，base_estimator = RandomForestRegressor()
         svm作为基学习器，base_estimator = SVR()
 
-    '''
+    """
+    from sklearn import ensemble
     parm_grid = {'n_estimators': np.arange(n_estimators_start, n_estimators_end, n_estimators_step)}
     best_parm, best_score = findBestParmByGridSearchCv(X, y, estimator=ensemble.BaggingRegressor(
         base_estimator=base_estimator), parm_grid=parm_grid, cv_num=cv_num, n_jobs=n_jobs)
@@ -578,9 +581,9 @@ def baggingRegressionParm(X, y, base_estimator, n_estimators_start, n_estimators
 
 def adaBoostRegressionParm(X, y, n_estimators_start, n_estimators_end, n_estimators_step, max_depth_start,
                            max_depth_end, max_depth_step, cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     优化adaBoost中的基学习器CART树、基学习器的数量、学习率和loss函数
-    
+
     Parameters
     ----------
         X : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
@@ -597,12 +600,12 @@ def adaBoostRegressionParm(X, y, n_estimators_start, n_estimators_end, n_estimat
             基学习器的数量。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的左端点。程序将会在区间内选取最优参数。
             例如n_estimators_start = 1
-            
+
         n_estimators_end : 数据类型为'int'
             基学习器的数量。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的右端点。程序将会在区间内选取最优参数。
             例如n_estimators_end = 200
-        
+
         max_depth_start : 数据类型为'int'
             CART树的最大深度。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的左端点。程序将会在区间内选取最优参数。
@@ -612,7 +615,7 @@ def adaBoostRegressionParm(X, y, n_estimators_start, n_estimators_end, n_estimat
             CART树的最大深度。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的右端点。程序将会在区间内选取最优参数。
             例如max_depth_end = 50
-    
+
         max_depth_step : 数据类型为'int'
             每次测试时的步长。
             例如当步长n_estimators_step = 3时，左端点 n_estimators_start = 1，右端点n_estimators_end = 10，此时基学习器的数量就在[1, 4, 7]中取一个较优值。
@@ -640,7 +643,9 @@ def adaBoostRegressionParm(X, y, n_estimators_start, n_estimators_end, n_estimat
         best_score : float
             模型交叉验证得分
 
-    '''
+    """
+    from sklearn import ensemble
+    from sklearn.tree import DecisionTreeRegressor
     dt_parm, dt_score = dtRegressionParm(X, y, max_depth_start, max_depth_end, max_depth_step)
     dt_model = DecisionTreeRegressor(max_depth=dt_parm['max_depth']).fit(X, y)
     parm_list = {'n_estimators': np.arange(n_estimators_start, n_estimators_end, n_estimators_step),
@@ -661,7 +666,7 @@ def gradientBoostingParm(X, y,
                          learning_rate, subsample,
                          max_depth_step, n_estimators_step, min_samples_leaf_step, min_samples_split_step,
                          cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     优化GBRT中基学习器的数量和CART树的深度
 
     Parameters
@@ -685,7 +690,7 @@ def gradientBoostingParm(X, y,
             基学习器(CART)的数量。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的右端点。程序将会在区间内选取最优参数。
             例如n_estimators_end = 200
-            
+
         max_depth_start : 数据类型为'int'
             CART树的最大深度。
             给定一个可能取值的区间(左闭右开)，该参数为这个区间的左端点。程序将会在区间内选取最优参数。
@@ -731,7 +736,7 @@ def gradientBoostingParm(X, y,
             可以给定一个确定的量，例如subsample = [1.0]。
             如果不确定的话，也可以给定一个'类数组'，其中包含多个可能的取值，程序会自动选取最优值。例如subsample = [0.5, 0.6, 0.7, 0.8]。
             选择小于1的比例可以减少方差，即防止过拟合，但是会增加样本拟合的偏差，因此取值不能太低。推荐[0.5, 0.8]之间
-        
+
         max_depth_step : 数据类型为'int'
             每次测试时的步长。
             例如当步长n_estimators_step = 3时，左端点 n_estimators_start = 1，右端点n_estimators_end = 10，此时基学习器的数量就在[1, 4, 7]中取一个较优值。
@@ -767,7 +772,8 @@ def gradientBoostingParm(X, y,
         best_score : float
             模型交叉验证得分
 
-    '''
+    """
+    from sklearn import ensemble
     parm_list = {'n_estimators': np.arange(n_estimators_start, n_estimators_end, n_estimators_step),
                  'max_depth': np.arange(max_depth_start, max_depth_end, max_depth_step),
                  'loss': ['ls', 'lad', 'huber', 'quantile'],
@@ -783,7 +789,7 @@ def gradientBoostingParm(X, y,
 
 
 def lassoParm(X, y, alpha, max_iter, cv_num=3, n_iter=20, n_jobs=-1):
-    '''
+    """
     lasso回归参数调优
 
     Parameters
@@ -801,7 +807,7 @@ def lassoParm(X, y, alpha, max_iter, cv_num=3, n_iter=20, n_jobs=-1):
         alpha : float 或者 '类数组'
             正则项系数。数值越大，则对复杂模型的惩罚力度越大。'类数组'是拥有数组结构，可以转化为narray的任何python对象。
             传入数组序列时，程序会在其中自动选优
-            
+
         max_iter : int
             最大迭代次数
 
@@ -824,7 +830,8 @@ def lassoParm(X, y, alpha, max_iter, cv_num=3, n_iter=20, n_jobs=-1):
         best_score : float
             模型交叉验证得分
 
-    '''
+    """
+    from sklearn.linear_model import Lasso
     parm_list = {'alpha': alpha}
     best_parm, best_score = findBestParmByRandomizedSearchCV(X, y, Lasso(max_iter=max_iter), parm_list=parm_list,
                                                              cv_num=cv_num, n_iter=n_iter, n_jobs=n_jobs)
@@ -857,6 +864,7 @@ def pearsonrValidation(X, y, X_name=None):
 
     """
     from pandas import DataFrame
+    from scipy.stats import pearsonr
     import numpy as np
     res = []
     for i in range(X.shape[1]):
@@ -871,33 +879,26 @@ def pearsonrValidation(X, y, X_name=None):
     return retVal
 
 
-def modelsRoc(modelDict, X_test, y_test):
-    '''
-    绘制模型的ROC曲线，计算模型的AUC值
-    
-    Parameters
-    ----------
-        modelDict : 字典
-            key为模型名字，value为训练好的模型
-            例如modelDict = {'svr': svr}
-            
-        X_test : 数据类型为'类数组'(list or numpy.narray)或'矩阵'(numpy.matrix)
-            自变量
-            数组和矩阵的每一行都是一条样本数据，每一列代表不同的特征。
-            例如X_train = [[5.63100,6.80000,5.81800],[6.80000,5.81800,5.42700],[5.81800,5.42700,6.12900]]
-            
-        y_test : 数据类型为'类数组'(list or numpy.narray)
-            类别标签
-            例如y_train = [1,0,1]
-
-    '''
-    fig, ax = plt.subplots(figsize=(12, 10))
-    for m_name, model in modelDict.item():
-        roc = plot_roc_curve(model, X_test, y_test, ax, linewidth=1)
+def rocDisplay(y_true, y_pred):
+    import matplotlib.pyplot as plt
+    from sklearn.metrics import roc_curve, auc, RocCurveDisplay
+    fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+    roc_auc = auc(fpr, tpr)
+    dis = RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc)
+    dis.plot()
     plt.show()
 
 
-def featureCorrelation(X, y, X_name=None, img=None):
+def confusionMatrixDisplay(y_true, y_pred):
+    from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+    import matplotlib.pyplot as plt
+    confusionMatrix = confusion_matrix(y_true, y_pred)
+    disp = ConfusionMatrixDisplay(confusion_matrix=confusionMatrix)
+    disp.plot()
+    plt.show()
+
+
+def FeatureCorrelation(X, y, X_name=None, img=None):
     """
     相关性分析
 
@@ -919,6 +920,7 @@ def featureCorrelation(X, y, X_name=None, img=None):
             如果需要将自变量和因变量的线性关系可视化，请让img=True，否则请保持默认img=None。
 
     """
+    import matplotlib.pyplot as plt
     ps = pearsonrValidation(X, y, X_name)
     print(ps)
     if img is not None:
@@ -932,7 +934,7 @@ def featureCorrelation(X, y, X_name=None, img=None):
 
 
 def arimaModel(data, d, pmax, qmax):
-    '''
+    """
     ARIMA模型。模型定阶选用BIC检验，组合各种p和q，获取最小BIC值的p和q
 
     Parameters
@@ -971,7 +973,7 @@ def arimaModel(data, d, pmax, qmax):
         # 想要预测未来五个时间单位的值
         arimamodel.forecast(5)
 
-    '''
+    """
     from statsmodels.tsa.arima_model import ARIMA
     data = np.array(pd.DataFrame(data).dropna()).flatten()
     bic_matrix = []
@@ -991,7 +993,7 @@ def arimaModel(data, d, pmax, qmax):
 
 
 def armaModel(data, pmax, qmax):
-    '''
+    """
     ARMA模型。模型定阶选用BIC检验，组合各种p和q，获取最小BIC值的p和q
 
     Parameters
@@ -1026,7 +1028,7 @@ def armaModel(data, pmax, qmax):
         # 想要预测未来五个时间单位的值
         arimamodel.forecast(5)
 
-    '''
+    """
     from statsmodels.tsa.arima_model import ARMA
     data = np.array(pd.DataFrame(data).dropna()).flatten()
     bic_matrix = []
@@ -1052,7 +1054,7 @@ class GraySystem:
     """
 
     def AGO(self, m):
-        '''
+        """
         累加生成算子
 
         Parameters
@@ -1069,7 +1071,7 @@ class GraySystem:
                 累加完成后的序列
                 x0 = [104, 101.8, 105.8, 111.5, 115.97, 120.03, 113.3, 116.4, 105.1, 83.4, 73.3]
 
-        '''
+        """
         import numpy as np
         li = np.zeros(shape=m.shape)
         for i in range(m.__len__()):
@@ -1419,7 +1421,6 @@ def surfaceFitting(img, deg: int = 2, mbSize: int = 15, model: object = None, de
     """
     import numpy as np
     import cv2
-
     location = []
     if manualLoc is None:
         # 找出最大连通区域
@@ -1539,7 +1540,8 @@ def denoise(img, n: int, mbSize: int = 3, q: int = 30):
         for j in range(ret.shape[1]):
             ret[i][j] = 0
             ret[ret.shape[0] - 1 - i][j] = 0
-    ret = cv2.medianBlur(ret, ksize=mbSize)
+    if mbSize > 0:
+        ret = cv2.medianBlur(ret, ksize=mbSize)
     return ret
 
 
@@ -1760,11 +1762,11 @@ class TestModel:
     模型測試的類
     """
 
-    def __init__(self, model, modelLocation, strict=True):
+    def __init__(self, model, modelLocation, strict=False):
         model.load_state_dict(torch.load(modelLocation), strict=strict)
         self.model = model
 
-    def testSingleImg(self, img):
+    def testSingleImg(self, img, visualization: bool = False, log_dir: str = '', comment: str = ''):
         """
         以單張圖片的格式來測試網絡
         Parameters
@@ -1787,11 +1789,21 @@ class TestModel:
             k = TestModel(ResNet50(ResidualBlock, 1, 5), 'model/net_21.pth').testSingleImg(transform(img).view(1, 1, 224, 224))
             print(k)
         """
-        out = self.model(img)
-        _, prediction = torch.max(out, 1)
-        return prediction.numpy()[0]
+        if visualization:
+            from torch.utils.tensorboard import SummaryWriter
+            if log_dir == '' or comment == '':
+                raise RuntimeError('SummaryWriter配置空!')
+            with SummaryWriter(log_dir=log_dir, comment=comment) as writer:
+                # 添加输入图片
+                writer.add_images('input img', img)
+                # 可视化网络结构
+                writer.add_graph(self.model, img)
+        else:
+            out = self.model(img)
+            _, prediction = torch.max(out, 1)
+            return prediction.numpy()[0]
 
-    def testDataLoader(self, dataLoader: DataLoader):
+    def testDataLoader(self, dataLoader: DataLoader, plot_confusion_matrix: bool = False):
         """
         以DataLoader的形式來測試網絡預測的準確度，命令行會打印出準確率
         Parameters
@@ -1801,19 +1813,48 @@ class TestModel:
 
         Examples
         -------
-        TestModel(ResNet50(ResidualBlock, 3, 151), 'model/net_107.pth').testDataLoader(valloader)
+            transform = torchvision.transforms.Compose([
+            torchvision.transforms.Resize(size=(256, 256)),
+            torchvision.transforms.ToTensor(),
+            ])
+            dataset = torchvision.datasets.ImageFolder('../sources/dataset/test/', transform)
+            testDataloader = torch.utils.data.DataLoader(dataset, batch_size=10)
+            TestModel(ResNet18(5), './model/cnn_model/net_21.pth').testDataLoader(testDataloader)
 
         """
-        correct = 0
+        from sklearn.metrics import f1_score, recall_score, accuracy_score, precision_score
+        error_num = 0
         total = 0
+        y_pred = []
+        y_true = []
         print('正在计算准确率...')
         for i, data in enumerate(dataLoader):
             inputs, labels = data
-            outputs = self.model(inputs)
+            with torch.no_grad():
+                try:
+                    outputs = self.model(inputs)
+                except RuntimeError as e:
+                    error_num += 1
+                    continue
             _, prediction = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += prediction.eq(labels.data).cpu().sum()
-        print('Total Sample:{}, True Number:{}, Acc:{:.3f}%'.format(total, correct, 100. * correct / total))
+            y_pred.append(prediction.numpy().astype(np.str).tolist())
+            y_true.append(labels.numpy().astype(np.str).tolist())
+            if labels.size().__len__() == 0:
+                total += 1
+            else:
+                total += labels.size()[0]
+        y_pred = np.array(functools.reduce(operator.concat, y_pred), dtype=np.int64)
+        y_true = np.array(functools.reduce(operator.concat, y_true), dtype=np.int64)
+        confusionMatrixDisplay(y_true, y_pred) if plot_confusion_matrix else total
+        accuracy = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred, average='weighted')
+        recall = recall_score(y_true, y_pred, average='weighted')
+        f1 = f1_score(y_true, y_pred, average='weighted')
+        with open('./evalution.txt', 'a+') as f:
+            f.write('Total Sample:{}, accuracy:{:.3f}, precison:{:.3f}, recall:{:.3f}, f1_score:{:.3f}\n'
+                    .format(total, accuracy, precision, recall, f1))
+            if error_num != 0:
+                f.write('有{}张图片发生错误\n'.format(error_num))
 
     def getFeatureVector(self, img):
         """
@@ -1822,12 +1863,28 @@ class TestModel:
         ----------
             img: 数据类型为numpy.narray
                 圖片數據，數組格式爲(1, channel_num, H, W)
+            visualization: bool
+                是否开启可视化
+            log_dir: str
+                tensorboard文件存储位置
+            comment: str
+                tensorboard comment
 
         Returns
         -------
             返回圖片的特徵向量
         """
-        return self.model(img).detach().numpy().flatten()
+        if visualization:
+            from torch.utils.tensorboard import SummaryWriter
+            if log_dir == '' or comment == '':
+                raise RuntimeError('SummaryWriter配置空!')
+            with SummaryWriter(log_dir=log_dir, comment=comment) as writer:
+                # 添加输入图片
+                writer.add_image('input img', img)
+                # 可视化网络结构
+                writer.add_graph(self.model, img)
+        else:
+            return self.model(img).detach().numpy().flatten()
 
 
 def getFeatureVectorPlus(img,
@@ -2111,6 +2168,60 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
     return ret
 
 
+def _extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
+    """
+    绘制项
+    Parameters
+    ----------
+    img
+    margin
+    diff
+    k
+    winStep
+
+    Returns
+    -------
+
+    """
+    import numpy as np
+    import cv2
+    import random
+    width = img.shape[0]
+    startCol = 0
+    endCol = int(width / 2)
+    maxStatue = np.array([0] * 3)
+    while endCol < width:
+        # 滑动窗口前进
+        winArea = img[:, startCol:endCol]
+        croped = cropImg(winArea[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
+        E = calc_2D_Entropy(croped)
+        maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, E])))
+        startCol += winStep
+        endCol += winStep
+    maxStatue = np.delete(maxStatue, [0], axis=0)
+    rgb = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    for i in range(k):
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        idx = np.argmax(maxStatue[:, -1])
+
+        left_top = (int(maxStatue[idx][0]), margin + diff)
+        right_top = (int(maxStatue[idx][1]), margin + diff)
+        left_bottom = (int(maxStatue[idx][0]), img.shape[1] - margin + diff)
+        right_bottom = (int(maxStatue[idx][1]), img.shape[1] - margin + diff)
+        point_color = (r, g, b)
+        thickness = 1
+        lineType = 4
+        cv2.line(rgb, left_top, right_top, point_color, thickness, lineType)
+        cv2.line(rgb, left_top, left_bottom, point_color, thickness, lineType)
+        cv2.line(rgb, left_bottom, right_bottom, point_color, thickness, lineType)
+        cv2.line(rgb, right_top, right_bottom, point_color, thickness, lineType)
+
+        cv2.imshow(maxStatue[idx][-1].__str__(), rgb)
+        cv2.waitKey(0)
+
+
 def calc_2D_Entropy(img, N: int = 2):
     import cv2
     # start = time.time()
@@ -2242,19 +2353,22 @@ def dataAugmentation(imgPath: str, rotationProbability: int, angle: int) -> None
         cv2.imwrite(imgPath + 'flip-' + imgName, flip)
     print('翻转完成!')
     # 重新对数据集内的新数据做一次随机旋转的操作
-    _imgNames = os.listdir(imgPath)
-    for _imgName in _imgNames:
-        if _imgName[-3:] != 'jpg':
-            continue
-        _img = cv2.imread(imgPath + _imgName, 0)
-        rows = _img.shape[0]
-        cols = _img.shape[1]
-        k = 0
-        while k == 0:
-            k = random.randint(-angle, angle)
-        args = {'center': (rows / 2, cols / 2), 'angle': k, 'scale': 1}
-        M = random_run(rotationProbability, cv2.getRotationMatrix2D, **args)
-        if M is not None:
-            dst = cv2.warpAffine(_img, M, (rows, cols))
-            cv2.imwrite(imgPath + 'rotation-' + _imgName, dst)
-    print('旋转完成！')
+    if angle != 0:
+        _imgNames = os.listdir(imgPath)
+        for _imgName in _imgNames:
+            if _imgName[-3:] != 'jpg':
+                continue
+            _img = cv2.imread(imgPath + _imgName, 0)
+            rows = _img.shape[0]
+            cols = _img.shape[1]
+            k = 0
+            while k == 0:
+                k = random.randint(-angle, angle)
+            args = {'center': (rows / 2, cols / 2), 'angle': k, 'scale': 1}
+            M = random_run(rotationProbability, cv2.getRotationMatrix2D, **args)
+            if M is not None:
+                dst = cv2.warpAffine(_img, M, (rows, cols))
+                cv2.imwrite(imgPath + 'rotation-' + _imgName, dst)
+        print('旋转完成！')
+
+
