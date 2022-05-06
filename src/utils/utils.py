@@ -1856,7 +1856,7 @@ class TestModel:
             if error_num != 0:
                 f.write('有{}张图片发生错误\n'.format(error_num))
 
-    def getFeatureVector(self, img):
+    def getFeatureVector(self, img, visualization=False, log_dir='', comment=''):
         """
         将单张图片转换成特征向量
         Parameters
@@ -1998,25 +1998,25 @@ def getAllFeatureVector(rootPath: str,
     print('wait a minute...')
     with open(labelPath, 'r') as f:
         labelDict = json.load(f)
-        try:
-            for name in names:
-                if os.path.isfile(rootPath + name):
-                    continue
-                imgNames = os.listdir(rootPath + name + '/')
-                for imgName in imgNames:
-                    img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
-                    img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_CUBIC)
-                    k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
-                        .getFeatureVector(transform(img).view(1, 1, 224, 224))
-                    k = np.append(k, labelDict[name])
-                    temp.append(k)
-                    count += 1
-                print(name + ' saved successfully! number is {}'.format(count))
-                count = 0
-            temp = np.array(temp)
-            np.savetxt(txtRootPath + 'vector' + '.txt', temp, '%f', delimiter=',')
-        except Exception as e:
-            print('Save failed\n' + e.__str__())
+        # try:
+        for name in names:
+            if os.path.isfile(rootPath + name):
+                continue
+            imgNames = os.listdir(rootPath + name + '/')
+            for imgName in imgNames:
+                img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
+                img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
+                k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
+                    .getFeatureVector(transform(img).view(1, 1, 256, 256))
+                k = np.append(k, labelDict[name])
+                temp.append(k)
+                count += 1
+            print(name + ' saved successfully! number is {}'.format(count))
+            count = 0
+        temp = np.array(temp)
+        np.savetxt(txtRootPath + 'vector' + '.txt', temp, '%f', delimiter=',')
+        # except Exception as e:
+        #     print('Save failed\n' + e.__str__())
 
 
 def make_labels(root_path: str, save_path: str, label_location: str):
@@ -2119,7 +2119,7 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
     k : int
         需要保留几个窗口
     diff : int
-        窗口上下裁剪
+        窗口上下裁剪,diff越上面割的越小
     margin
     Returns
     -------
@@ -2154,7 +2154,7 @@ def extract_ROI(img, margin: int, diff: int = 0, k: int = 1, winStep: int = 1):
         # 滑动窗口前进
         winArea = img[:, startCol:endCol]
         croped = cropImg(winArea[:, startCol:endCol], margin + diff, margin - diff, 0, 0)
-        E = calc_2D_Entropy(croped)
+        E = calc_2D_Entropy(croped, N=2)
         maxStatue = np.row_stack((maxStatue, np.array([startCol, endCol, E])))
         startCol += winStep
         endCol += winStep

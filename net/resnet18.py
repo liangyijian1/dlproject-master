@@ -80,7 +80,6 @@ class ResNet(nn.Module):
         self.layer4 = self.make_layer(ResidualBlock, 512, 2, stride=2)
         self.ca4 = ChannelAttention(512, 16)
         self.fc = nn.Linear(512, num_classes)
-        self.do = nn.Dropout(p=0.3)
 
     def make_layer(self, block, channels, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)

@@ -7,6 +7,7 @@ import torchvision
 from torch.utils.tensorboard import SummaryWriter
 
 from net.MyDataset import *
+from net.octnet import octnet
 from net.resnet18 import init_weight, ResNet18
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -86,9 +87,9 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
 
 
 EPOCH = 50
-BATCH_SIZE = 13
+BATCH_SIZE = 5
 LR = 0.01
-imgPath = '../sources/dataset/withoutFlatten/preprocess/'
+imgPath = '../sources/dataset/afterFlatten/roi_nlm/'
 transform_train = torchvision.transforms.Compose([
     torchvision.transforms.Resize(size=(256, 256)),
     torchvision.transforms.ToTensor(),
@@ -99,15 +100,16 @@ with open('./label.txt', 'w+') as f:
     json.dump(full_dataset.class_to_idx, f)
 
 trainLoader, testLoader, valLoader = load_local_dataset(full_dataset, BATCH_SIZE)
-net = ResNet18(5).to(device)
-# net = ResNet50(ResidualBlock, 1, 5).to(device)
-# preDict = torch.load('./model/preTrainModel/net_14.pth')
-# preDict.pop('fc.weight')
-# preDict.pop('fc.bias')
-# net.load_state_dict(preDict, strict=False)
-net.apply(init_weight)
-images = torch.randn(1, 1, 28, 28)
-writer.add_graph(net, images)
+net = octnet(5).to(device)
+# net = ResNet18(5).to(device)
+# # net = ResNet50(ResidualBlock, 1, 5).to(device)
+# # preDict = torch.load('./model/preTrainModel/net_14.pth')
+# # preDict.pop('fc.weight')
+# # preDict.pop('fc.bias')
+# # net.load_state_dict(preDict, strict=False)
+# net.apply(init_weight)
+# images = torch.randn(1, 1, 28, 28)
+# writer.add_graph(net, images)
 
 loss = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=LR, weight_decay=0.001, momentum=0.5)

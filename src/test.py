@@ -1,38 +1,76 @@
+import math
+import os
+import sys
+import traceback
+
+import cv2
+import numpy as np
 import torch.utils.data
 import torchvision.transforms
-
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.manifold import TSNE
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, \
+    median_absolute_error
+from skimage.metrics import structural_similarity as ssim
+from net.octnet import octnet
 from net.resnet18 import ResNet18
+from src.utils.regression import Regression
+
 from src.utils.utils import *
-
-# def hook_func(module, input):
-#     x = input[0][0]
-#     x = x.unsqueeze(1)
-#     global i
-#     image_batch = torchvision.utils.make_grid(x, padding=4)
-#     image_batch = image_batch.numpy().transpose(1, 2, 0)
-#     writer.add_image("test", image_batch, i, dataformats='HWC')
-#     i += 1
-
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     pass
+
+    X, y = get_data('./res/vector/testVector.txt')
+    X_embeded = TSNE(n_components=1, learning_rate='auto', init='random').fit_transform(X)
+    fig = plt.scatter(X_embeded, y)
+    plt.show()
+    # img = cv2.imread('1-003.jpg', 0)
+    # sd = standardization(img)
+    # dn = denoise(sd, 15, mbSize=-1)
+    # dn1 = denoise(sd, 15, mbSize=3)
+    # dn2 = cv2.fastNlMeansDenoising(sd, h=10, templateWindowSize=7, searchWindowSize=21)
+    # p1 = cv2.PSNR(img, dn)
+    # p2 = cv2.PSNR(img, dn1)
+    # p3 = cv2.PSNR(img, dn2)
+    # s1 = ssim(img, dn)
+    # s2 = ssim(img, dn1)
+    # s3 = ssim(img, dn2)
+    # print('p1:{:.3f}, p2:{:.3f}, p3:{:.3f}\n'.format(p1, p2, p3))
+    # print('s1:{:.3f}, s2:{:.3f}, s3:{:.3f}'.format(s1, s2, s3))
+    # hs = np.hstack((img, sd, dn, dn1, dn2))
+    # cv2.imwrite('hs.jpg', hs)
+
+    # original = cv2.imread('1-2-373.jpg', 0)
+    # flatten = cv2.imread('2-373.jpg', 0)
+    # e1 = calc_2D_Entropy(original)
+    # e2 = calc_2D_Entropy(flatten)
+    # print(e1, ' ', e2)
+    # # margin = int((original.shape[1] - int(original.shape[0] / 2)) / 2)
+    # # roi1 = extract_ROI(original, margin, -25, winStep=15)
+    # # roi2 = extract_ROI(flatten, margin, -25, winStep=15)
+    # # ret = np.hstack((roi1[0], roi2[0]))
+    # # cv2.imshow('1', ret)
+    # # cv2.waitKey(0)
+
     # lists = os.listdir('../sources/dataset/withoutFlatten/preprocess/')
     # for item in lists:
     #     dataAugmentation('../sources/dataset/withoutFlatten/preprocess/' + item + '/', rotationProbability=35, angle=0)
     #     print(item, ' done!')
 
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Resize(size=(256, 256)),
-    ])
-    # img = cv2.imread('3-384.jpg', 0)
-    #
-    # TestModel(ResNet18(5), './model/cnn_model/net_9.pth').testSingleImg(transform(img).view(1, 1, 256, 256), visualization=True, log_dir='scalar/test', comment='test')
-    dataset = torchvision.datasets.ImageFolder('../sources/dataset/afterFlatten/test/', transform)
-    testDataloader = torch.utils.data.DataLoader(dataset, batch_size=15)
-    TestModel(ResNet18(5), './model/cnn_model/net_11.pth').testDataLoader(testDataloader, True)
+    # transform = torchvision.transforms.Compose([
+    #     torchvision.transforms.ToTensor(),
+    #     torchvision.transforms.Resize(size=(256, 256)),
+    # ])
+    # # img = cv2.imread('3-384.jpg', 0)
+    # #
+    # # TestModel(ResNet18(5), './model/cnn_model/net_9.pth').testSingleImg(transform(img).view(1, 1, 256, 256), visualization=True, log_dir='scalar/test', comment='test')
+    # dataset = torchvision.datasets.ImageFolder('../sources/dataset/afterFlatten/test/', transform)
+    # testDataloader = torch.utils.data.DataLoader(dataset, batch_size=15)
+    # TestModel(octnet(5), './model/net_12.pth').testDataLoader(testDataloader, True)
 
-    # rootPath = '../sources/dataset/withoutFlatten/dataset/'
+    # rootPath = '../sources/dataset/withoutFlatten/test1/'
     # dirs = os.listdir(rootPath)
     # for item in dirs:
     #     imgNames = os.listdir(rootPath + item)
@@ -43,9 +81,9 @@ if __name__ == '__main__':
     #         img = cv2.imread(rootPath + item + '/' + imgName, 0)
     #         sd = standardization(img)
     #         denoiseImg = denoise(sd, 15, -1, 30)
-    #         if not os.path.exists('../sources/dataset/withoutFlatten/preprocess/' + item + '/'):
-    #             os.mkdir('../sources/dataset/withoutFlatten/preprocess/' + item + '/')
-    #         cv2.imwrite('../sources/dataset/withoutFlatten/preprocess/' + item + '/' + imgName, denoiseImg)
+    #         if not os.path.exists('../sources/dataset/withoutFlatten/preprocess1/' + item + '/'):
+    #             os.mkdir('../sources/dataset/withoutFlatten/preprocess1/' + item + '/')
+    #         cv2.imwrite('../sources/dataset/withoutFlatten/preprocess1/' + item + '/' + imgName, denoiseImg)
     #         count += 1
     #         print('class:{}, {} done! Total:{}, left:{}'.format(item, imgName, len(imgNames), len(imgNames) - count))
 
@@ -76,11 +114,11 @@ if __name__ == '__main__':
     #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
     #             print(imgName + "处理时候发生错误，： " + e.__str__())
     #             traceback.print_exc(file=sys.stdout)
-
+    #
     # # 去噪
-    # rootPath = '../sources/dataset/'
+    # rootPath = '../sources/dataset/afterFlatten/test/'
     # # imgPathNames = os.listdir(rootPath)
-    # imgPathNames = ['temp']
+    # imgPathNames = ['0', '16', '20', '8', '12']
     # for imgPathName in imgPathNames:
     #     imgNames = os.listdir(rootPath + imgPathName + '/')
     #     # imgNames = ['5-129.jpg']
@@ -91,12 +129,13 @@ if __name__ == '__main__':
     #             if imgName[-3:] == 'jpg':
     #                 imgPath = rootPath + imgPathName + '/' + imgName
     #                 img = cv2.imread(imgPath, 0)
-    #                 img = standardization(img)
-    #                 y, _ = surfaceFitting(img, deg=2, mbSize=15)
-    #                 afterDenoise = denoise(img, 3)
-    #                 flattened_img = flatten(afterDenoise, [512 - i for i in y])
+    #                 # img = standardization(img)
+    #                 # y, _ = surfaceFitting(img, deg=3, mbSize=15)
+    #                 # afterDenoise = denoise(img, 3)
+    #                 afterDenoise = cv2.fastNlMeansDenoising(img, h=10, templateWindowSize=7, searchWindowSize=21)
+    #                 # flattened_img = flatten(np.copy(img), [512 - i for i in y])
     #                 # flattened_img = cropImg(flattened_img, 20, 20, 40, 0)
-    #                 cv2.imwrite(rootPath + imgPathName + '/done/' + imgName, flattened_img)
+    #                 cv2.imwrite(rootPath + imgPathName + '/' + imgName, afterDenoise)
     #                 print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
     #         except Exception as e:
     #             with open('./failed', 'a+') as f:
@@ -115,10 +154,10 @@ if __name__ == '__main__':
     #     original_location_img0[k[0]][k[1] - 1] = 255
     # flattened_img0 = ut.flatten(img_0, [512 - i for i in y0])
 
-    # 提取ROI
-    # rootPath = '../sources/dataset/preprocessed/'
+    # # 提取ROI
+    # rootPath = '../sources/dataset/afterFlatten/test/'
     # # categories = os.listdir(rootPath)
-    # categories = ['12']
+    # categories = ['8', '12', '16', '20']
     # for category in categories:
     #     count = 0
     #     imgNames = os.listdir(rootPath + category + '/')
@@ -127,12 +166,14 @@ if __name__ == '__main__':
     #     for imgName in imgNames:
     #         if not imgName[-3:] == 'jpg':
     #             continue
-    #         # if not imgName == '7-041.jpg':
+    #         # if imgName[:7] != 'flip-14':
+    #         # if imgName[:1] != '5':
+    #         # if imgName[:6] != 'flip-5':
     #         #     continue
     #         try:
     #             img = cv2.imread(rootPath + category + '/' + imgName, flags=0)
     #             margin = int((img.shape[1] - int(img.shape[0] / 2)) / 2)
-    #             rets = extract_ROI(img, margin=margin, diff=-30, winStep=25, k=2)
+    #             rets = extract_ROI(img, margin=margin, diff=- int(margin / 2) + 10, winStep=25, k=1)
     #             count += 1
     #             for idx, ret in enumerate(rets):
     #                 cv2.imwrite(rootPath + category + '/done/' + idx.__str__() + '-' + imgName, ret)
@@ -146,10 +187,13 @@ if __name__ == '__main__':
     #                 traceback.print_exc(file=sys.stdout)
 
     # # 获取向量
-    # model = ResNet18DeepFeature(num_classes=5)
-    # modelLocation = './model/cnn_model/net_21.pth'
-    # rootPath = '../sources/dataset/test/'
-    # transform = torchvision.transforms.ToTensor()
+    # model = octnet(num_class=5, check_fc=False)
+    # modelLocation = './model/cnn_model/net_10.pth'
+    # rootPath = '../sources/dataset/withoutFlatten/test/'
+    # transform = torchvision.transforms.Compose([
+    #     torchvision.transforms.ToTensor(),
+    #     torchvision.transforms.Resize(size=(256, 256)),
+    # ])
     # getAllFeatureVector(rootPath=rootPath, model=model, modelLocation=modelLocation, transform=transform,
     #                     labelPath='./label.txt')
 
@@ -170,9 +214,16 @@ if __name__ == '__main__':
     # regr = Regression()
     #
     # X, y = get_data('./res/vector/testVector.txt')
-    # rf_pre = loadModel('model/ml_model/svm.pkl').predict(X)
-    # svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
-    # print('Random Forest预测的r2_score是 {}     Svm预测的r2_score是 {}'.format(r2_score(y, rf_pre), r2_score(y, svm_pre)))
+    # rf_pre = loadModel('model/ml_model/rf.pkl').predict(X)
+    # # svm_pre = loadModel('model/ml_model/svm.pkl').predict(X)
+    # # print('Random Forest预测的r2_score是 {}     Svm预测的r2_score是 {}'.format(r2_score(y, rf_pre), r2_score(y, svm_pre)))
+    # print('r2_score是 {:.3f}, MAE:{:.3f}, MedAE:{:.3f}, MSE:{:.3f}, RMSE:{:.3f}'.format(
+    #                                                                         r2_score(y, rf_pre),
+    #                                                                         mean_absolute_error(y, rf_pre),
+    #                                                                         median_absolute_error(y, rf_pre),
+    #                                                                         # mean_absolute_percentage_error(y, rf_pre),
+    #                                                                         mean_squared_error(y, rf_pre),
+    #                                                                         math.sqrt(mean_squared_error(y, rf_pre))))
 
     # # 使用机器学习模型验证
     # transform = torchvision.transforms.Compose([
@@ -330,4 +381,3 @@ if __name__ == '__main__':
     #     'SVM对测试集的:\nr2_score：{:.4f}， 均方误差MSE:{:.4f}, 绝对均值误差MAE:{:.4f}, 解释方差explained_variance_score:{:.4f}, 绝对中位差median_absolute_error：{:.4f}\n'.format(
     #         r2_score(y, svm_pre), mean_squared_error(y, svm_pre), mean_absolute_error(y, svm_pre),
     #         explained_variance_score(y, svm_pre), median_absolute_error(y, svm_pre)))
-
