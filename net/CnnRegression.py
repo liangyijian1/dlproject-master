@@ -1,6 +1,6 @@
 import torch.nn as nn
 from net.resnet50 import ResidualBlock, make_layer
-
+import torch.nn.functional as F
 
 class ResNet50Regression(nn.Module):
 
@@ -28,3 +28,42 @@ class ResNet50Regression(nn.Module):
         out = self.avgPool(out)
         out = out.view(out.size(0), -1)
         return out
+
+
+class mlpRegression(nn.Module):
+    # def __init__(self, inchannel):
+    #     super(mlpRegression, self).__init__()
+    #     self.layer1 = nn.Sequential(
+    #         nn.Linear(in_features=inchannel, out_features=512),
+    #         nn.ReLU()
+    #     )
+    #     self.layer2 = nn.Sequential(
+    #         nn.Linear(in_features=512, out_features=1024),
+    #         nn.ReLU()
+    #     )
+    #     self.layer3 = nn.Sequential(
+    #         nn.Linear(in_features=1024, out_features=1)
+    #     )
+    #
+    # def forward(self, x):
+    #     out = self.layer1(x)
+    #     out = self.layer2(out)
+    #     out = self.layer3(out)
+    #     return out
+    def __init__(self):
+        super(mlpRegression, self).__init__()
+        # 定义第一个隐藏层
+        self.hidden1 = nn.Linear(in_features=256, out_features=1024, bias=True)  # 8*100 8个属性特征
+        # 定义第二个隐藏层
+        self.hidden2 = nn.Linear(1024, 1024)  # 100*100
+        # 定义第三个隐藏层
+        self.hidden3 = nn.Linear(1024, 512)  # 100*50
+        # 回归预测层
+        self.predict = nn.Linear(512, 1)  # 50*1  预测只有一个 房价
+
+    def forward(self, x):
+        x = F.relu(self.hidden1(x))
+        x = F.relu(self.hidden2(x))
+        x = F.relu(self.hidden3(x))
+        output = self.predict(x)
+        return output[:, 0]

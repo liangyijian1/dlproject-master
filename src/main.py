@@ -110,7 +110,6 @@ net = octnet(5).to(device)
 # net.apply(init_weight)
 # images = torch.randn(1, 1, 28, 28)
 # writer.add_graph(net, images)
-
 loss = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=LR, weight_decay=0.001, momentum=0.5)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=2)

@@ -4,28 +4,54 @@ import sys
 import traceback
 
 import cv2
-import numpy as np
 import torch.utils.data
 import torchvision.transforms
 from mpl_toolkits.mplot3d import Axes3D
-from sklearn.manifold import TSNE
+from sklearn.datasets import fetch_california_housing
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE, Isomap
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error, \
     median_absolute_error
-from skimage.metrics import structural_similarity as ssim
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+from net.CnnRegression import mlpRegression
 from net.octnet import octnet
 from net.resnet18 import ResNet18
 from src.utils.regression import Regression
 
 from src.utils.utils import *
+import torch.nn as nn
+import torch.utils.data as Data
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     pass
+    # train_x, train_y = get_data('./res/vector/trainVector.txt')
+    test_x, test_y = get_data('./res/vector/testVector.txt')
+    # # scale = StandardScaler()
+    # # train_x = scale.fit_transform(train_x)
+    # # test_x = scale.fit_transform(test_x)
+    # # 转换为张量
+    # train_x = torch.from_numpy(train_x)
+    # train_y = torch.from_numpy(train_y)
+    #
+    test_x = torch.from_numpy(test_x)
+    test_y = torch.from_numpy(test_y)
+    # # 转换成DataLoader
+    # train_data = Data.TensorDataset(train_x, train_y)
+    # test_data = Data.TensorDataset(test_x, test_y)
+    #
+    # train_loader = Data.DataLoader(dataset=train_data, batch_size=32, shuffle=True)
+    # test_loader = Data.DataLoader(dataset=test_data, batch_size=32, shuffle=True)
+    # # mlp训练
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # net = mlpRegression().double().to(device)
+    # optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
+    # loss = nn.MSELoss()
+    #
+    # startTrain(net, train_loader, test_loader, 20, loss, optimizer, './model/')
 
-    X, y = get_data('./res/vector/testVector.txt')
-    X_embeded = TSNE(n_components=1, learning_rate='auto', init='random').fit_transform(X)
-    fig = plt.scatter(X_embeded, y)
-    plt.show()
     # img = cv2.imread('1-003.jpg', 0)
     # sd = standardization(img)
     # dn = denoise(sd, 15, mbSize=-1)
@@ -116,9 +142,9 @@ if __name__ == '__main__':
     #             traceback.print_exc(file=sys.stdout)
     #
     # # 去噪
-    # rootPath = '../sources/dataset/afterFlatten/test/'
+    # rootPath = '../sources/dataset/cyclegan/temp/'
     # # imgPathNames = os.listdir(rootPath)
-    # imgPathNames = ['0', '16', '20', '8', '12']
+    # imgPathNames = ['waitConvertA']
     # for imgPathName in imgPathNames:
     #     imgNames = os.listdir(rootPath + imgPathName + '/')
     #     # imgNames = ['5-129.jpg']
@@ -131,15 +157,47 @@ if __name__ == '__main__':
     #                 img = cv2.imread(imgPath, 0)
     #                 # img = standardization(img)
     #                 # y, _ = surfaceFitting(img, deg=3, mbSize=15)
-    #                 # afterDenoise = denoise(img, 3)
-    #                 afterDenoise = cv2.fastNlMeansDenoising(img, h=10, templateWindowSize=7, searchWindowSize=21)
+    #                 afterDenoise1 = denoise(img, 3, mbSize=-1)
+    #                 afterDenoise = cv2.fastNlMeansDenoising(afterDenoise1, h=10, templateWindowSize=7, searchWindowSize=21)
     #                 # flattened_img = flatten(np.copy(img), [512 - i for i in y])
     #                 # flattened_img = cropImg(flattened_img, 20, 20, 40, 0)
-    #                 cv2.imwrite(rootPath + imgPathName + '/' + imgName, afterDenoise)
+    #                 cv2.imwrite(rootPath + imgPathName + '/done/' + imgName, afterDenoise)
     #                 print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
     #         except Exception as e:
     #             with open('./failed', 'a+') as f:
     #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
+    #             print(imgName + "处理时候发生错误，： " + e.__str__())
+    #             traceback.print_exc(file=sys.stdout)
+
+    # rootPath = '../sources/dataset/cyclegan/'
+    # imgPathNames = ['trainA']
+    # transform = torchvision.transforms.Compose([
+    #     torchvision.transforms.ToPILImage(),
+    #     torchvision.transforms.Resize(size=(256, 256)),
+    #     torchvision.transforms.RandomHorizontalFlip(),
+    #     torchvision.transforms.ColorJitter(brightness=(0.8, 1.2)),
+    #     torchvision.transforms.RandomAffine(0, translate=(0.05, 0.1), scale=(0.8, 1.2)),
+    #     torchvision.transforms.GaussianBlur(3),
+    #     torchvision.transforms.RandomRotation(25),
+    # ])
+    # for imgPathName in imgPathNames:
+    #     imgNames = os.listdir(rootPath + imgPathName + '/')
+    #     k = int(2000 / len(imgNames))
+    #     if not os.path.exists(rootPath + imgPathName + '/done/'):
+    #         os.mkdir(rootPath + imgPathName + '/done/')
+    #     for idx, imgName in enumerate(imgNames):
+    #         try:
+    #             if imgName[-3:] == 'jpg':
+    #                 imgPath = rootPath + imgPathName + '/' + imgName
+    #                 img = cv2.imread(imgPath, 0)
+    #                 count = 0
+    #                 # for i in range(k + 1):
+    #                 for i in range(1):
+    #                     tr = np.asarray(transform(img))
+    #                     cv2.imwrite(rootPath + imgPathName + '/done/' + count.__str__() + '-' + imgName, tr)
+    #                     count += 1
+    #                 print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
+    #         except Exception as e:
     #             print(imgName + "处理时候发生错误，： " + e.__str__())
     #             traceback.print_exc(file=sys.stdout)
 
