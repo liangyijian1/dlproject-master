@@ -1494,13 +1494,14 @@ def flatten(img, surfacePosition):
     return ret
 
 
-def denoise(img, n: int, mbSize: int = 3, q: int = 30):
+def denoise(img, n: int, mb_size: int = 3, q: int = 30, is_top: bool = True):
     """
     图片去噪
     Parameters
     ----------
+    is_top
     q
-    mbSize : int
+    mb_size : int
         中值滤波核大小，作用为平滑图像边缘，一般选取小滤波核
     img:数据类型为numpy.narray
         图片数据
@@ -1518,16 +1519,23 @@ def denoise(img, n: int, mbSize: int = 3, q: int = 30):
     import cv2
     ret = np.copy(img)
     k = []
-    num = 1
+    num = 0
     sum = 0
-    for i in range(n):
+    if is_top:
+        a = 0
+        b = n
+    else:
+        a = ret.shape[0] - n
+        b = ret.shape[1]
+    for i in range(a, b):
         for j in range(ret.shape[1]):
             if ret[i][j] <= 3:
                 continue
             sum += ret[i][j]
             k.append(ret[i][j])
             num += 1
-    ave = sum / num
+    ave = np.divide(sum, num)
+    # ave = sum / num
     sum = 0
     for value in k:
         sum += np.power(value - ave, 2)
@@ -1540,8 +1548,8 @@ def denoise(img, n: int, mbSize: int = 3, q: int = 30):
         for j in range(ret.shape[1]):
             ret[i][j] = 0
             ret[ret.shape[0] - 1 - i][j] = 0
-    if mbSize > 0:
-        ret = cv2.medianBlur(ret, ksize=mbSize)
+    if mb_size > 0:
+        ret = cv2.medianBlur(ret, ksize=mb_size)
     return ret
 
 

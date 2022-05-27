@@ -4,6 +4,7 @@ import sys
 import traceback
 
 import cv2
+import numpy as np
 import torch.utils.data
 import torchvision.transforms
 from mpl_toolkits.mplot3d import Axes3D
@@ -28,7 +29,7 @@ import matplotlib.pyplot as plt
 if __name__ == '__main__':
     pass
     # train_x, train_y = get_data('./res/vector/trainVector.txt')
-    test_x, test_y = get_data('./res/vector/testVector.txt')
+    # test_x, test_y = get_data('./res/vector/testVector.txt')
     # # scale = StandardScaler()
     # # train_x = scale.fit_transform(train_x)
     # # test_x = scale.fit_transform(test_x)
@@ -36,8 +37,6 @@ if __name__ == '__main__':
     # train_x = torch.from_numpy(train_x)
     # train_y = torch.from_numpy(train_y)
     #
-    test_x = torch.from_numpy(test_x)
-    test_y = torch.from_numpy(test_y)
     # # 转换成DataLoader
     # train_data = Data.TensorDataset(train_x, train_y)
     # test_data = Data.TensorDataset(test_x, test_y)
@@ -80,9 +79,9 @@ if __name__ == '__main__':
     # # cv2.imshow('1', ret)
     # # cv2.waitKey(0)
 
-    # lists = os.listdir('../sources/dataset/withoutFlatten/preprocess/')
+    # lists = os.listdir('../sources/dataset/without_flatten/preprocess/')
     # for item in lists:
-    #     dataAugmentation('../sources/dataset/withoutFlatten/preprocess/' + item + '/', rotationProbability=35, angle=0)
+    #     dataAugmentation('../sources/dataset/without_flatten/preprocess/' + item + '/', rotationProbability=35, angle=0)
     #     print(item, ' done!')
 
     # transform = torchvision.transforms.Compose([
@@ -96,7 +95,7 @@ if __name__ == '__main__':
     # testDataloader = torch.utils.data.DataLoader(dataset, batch_size=15)
     # TestModel(octnet(5), './model/net_12.pth').testDataLoader(testDataloader, True)
 
-    # rootPath = '../sources/dataset/withoutFlatten/test1/'
+    # rootPath = '../sources/dataset/without_flatten/test1/'
     # dirs = os.listdir(rootPath)
     # for item in dirs:
     #     imgNames = os.listdir(rootPath + item)
@@ -107,9 +106,9 @@ if __name__ == '__main__':
     #         img = cv2.imread(rootPath + item + '/' + imgName, 0)
     #         sd = standardization(img)
     #         denoiseImg = denoise(sd, 15, -1, 30)
-    #         if not os.path.exists('../sources/dataset/withoutFlatten/preprocess1/' + item + '/'):
-    #             os.mkdir('../sources/dataset/withoutFlatten/preprocess1/' + item + '/')
-    #         cv2.imwrite('../sources/dataset/withoutFlatten/preprocess1/' + item + '/' + imgName, denoiseImg)
+    #         if not os.path.exists('../sources/dataset/without_flatten/preprocess1/' + item + '/'):
+    #             os.mkdir('../sources/dataset/without_flatten/preprocess1/' + item + '/')
+    #         cv2.imwrite('../sources/dataset/without_flatten/preprocess1/' + item + '/' + imgName, denoiseImg)
     #         count += 1
     #         print('class:{}, {} done! Total:{}, left:{}'.format(item, imgName, len(imgNames), len(imgNames) - count))
 
@@ -141,34 +140,28 @@ if __name__ == '__main__':
     #             print(imgName + "处理时候发生错误，： " + e.__str__())
     #             traceback.print_exc(file=sys.stdout)
     #
-    # # 去噪
-    # rootPath = '../sources/dataset/cyclegan/temp/'
-    # # imgPathNames = os.listdir(rootPath)
-    # imgPathNames = ['waitConvertA']
-    # for imgPathName in imgPathNames:
-    #     imgNames = os.listdir(rootPath + imgPathName + '/')
-    #     # imgNames = ['5-129.jpg']
-    #     if not os.path.exists(rootPath + imgPathName + '/done/'):
-    #         os.mkdir(rootPath + imgPathName + '/done/')
-    #     for idx, imgName in enumerate(imgNames):
-    #         try:
-    #             if imgName[-3:] == 'jpg':
-    #                 imgPath = rootPath + imgPathName + '/' + imgName
-    #                 img = cv2.imread(imgPath, 0)
-    #                 # img = standardization(img)
-    #                 # y, _ = surfaceFitting(img, deg=3, mbSize=15)
-    #                 afterDenoise1 = denoise(img, 3, mbSize=-1)
-    #                 afterDenoise = cv2.fastNlMeansDenoising(afterDenoise1, h=10, templateWindowSize=7, searchWindowSize=21)
-    #                 # flattened_img = flatten(np.copy(img), [512 - i for i in y])
-    #                 # flattened_img = cropImg(flattened_img, 20, 20, 40, 0)
-    #                 cv2.imwrite(rootPath + imgPathName + '/done/' + imgName, afterDenoise)
-    #                 print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
-    #         except Exception as e:
-    #             with open('./failed', 'a+') as f:
-    #                 f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
-    #             print(imgName + "处理时候发生错误，： " + e.__str__())
-    #             traceback.print_exc(file=sys.stdout)
+    # 去噪
+    rootPath = '../sources/dataset/without_flatten/original_dataset/'
+    imgPathNames = os.listdir(rootPath)
+    for imgPathName in imgPathNames:
+        imgNames = os.listdir(rootPath + imgPathName + '/')
+        os.makedirs(rootPath + imgPathName + '/done/', exist_ok=True)
+        for idx, imgName in enumerate(imgNames):
+            try:
+                if imgName[-3:] == 'jpg':
+                    imgPath = rootPath + imgPathName + '/' + imgName
+                    img = cv2.imread(imgPath, 0)
+                    threshold = denoise(img, 15, mb_size=-1, is_top=True)
+                    afterDenoise = cv2.fastNlMeansDenoising(threshold, h=10, templateWindowSize=7, searchWindowSize=21)
+                    cv2.imwrite(rootPath + imgPathName + '/done/' + imgName, afterDenoise)
+                    print(imgName, ' 完成。还有{}个'.format(len(imgNames) - idx - 1))
+            except Exception as e:
+                with open('./failed.txt', 'a+') as f:
+                    f.write('\n' + imgName + "处理时候发生错误，： " + e.__str__())
+                print(imgName + "处理时候发生错误，： " + e.__str__())
+                traceback.print_exc(file=sys.stdout)
 
+    # # 数据增强
     # rootPath = '../sources/dataset/cyclegan/'
     # imgPathNames = ['trainA']
     # transform = torchvision.transforms.Compose([
@@ -247,7 +240,7 @@ if __name__ == '__main__':
     # # 获取向量
     # model = octnet(num_class=5, check_fc=False)
     # modelLocation = './model/cnn_model/net_10.pth'
-    # rootPath = '../sources/dataset/withoutFlatten/test/'
+    # rootPath = '../sources/dataset/without_flatten/test/'
     # transform = torchvision.transforms.Compose([
     #     torchvision.transforms.ToTensor(),
     #     torchvision.transforms.Resize(size=(256, 256)),
