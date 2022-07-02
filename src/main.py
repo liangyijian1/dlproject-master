@@ -89,10 +89,11 @@ def startTrain(net, trainLoader, testLoader, valLoader, epoch, lossFun, optimize
 EPOCH = 50
 BATCH_SIZE = 5
 LR = 0.01
-imgPath = '../sources/dataset/afterFlatten/roi_nlm/'
+imgPath = '../sources/dataset/without_flatten/denoise_dataset/base_data_augmentation/'
 transform_train = torchvision.transforms.Compose([
     torchvision.transforms.Resize(size=(256, 256)),
     torchvision.transforms.ToTensor(),
+    torchvision.transforms.Grayscale(1)
 ])
 
 full_dataset = torchvision.datasets.ImageFolder(imgPath, transform_train)

@@ -54,4 +54,6 @@ class octnet(nn.Module):
         if self.check_fc:
             out = self.fc1(out)
             out = self.fc2(out)
+        # TODO Ìí¼ÓORMÄ£¿é
+
         return out

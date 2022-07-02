@@ -2013,7 +2013,7 @@ def getAllFeatureVector(rootPath: str,
             imgNames = os.listdir(rootPath + name + '/')
             for imgName in imgNames:
                 img = cv2.imread(rootPath + name + '/' + imgName, flags=0)
-                img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
+                # img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
                 k = TestModel(model=model, modelLocation=modelLocation, strict=False) \
                     .getFeatureVector(transform(img).view(1, 1, 256, 256))
                 k = np.append(k, labelDict[name])
